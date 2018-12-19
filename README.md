@@ -5,9 +5,9 @@ The purpose of this tool is to help build and preview the layout of a WillowTree
 
 ## Goal 
 The current goal for this app is:
-    1. Allow user to add, delete, reorder and resize items in a grid
-    2. Fetch the list of jobs and widgets and allow user to assign them to an item in the grid
-    3. Export the JSON in the correct format for the existing dashboard generator (see above link)
+1. Allow user to add, delete, reorder and resize items in a grid
+2. Fetch the list of jobs and widgets and allow user to assign them to an item in the grid
+3. Export the JSON in the correct format for the existing dashboard generator (see above link)
 
 ## Muuri
 This project uses [Muuri](https://haltu.github.io/muuri/) for the drag and drop grid.
