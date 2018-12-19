@@ -1,4 +1,4 @@
-# DashboardGenerator
+# WTDashboardJSONGenerator
 
 ## Purpose 
 The purpose of this tool is to help build and preview the layout of a WillowTree project dashboard. When the user is happy with the layout, they can have the JSON string generated for them which would be a great starting point for the current [Atlasboard dashboard generator](https://github.com/willowtreeapps/wt-atlasboards-generator).
