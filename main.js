@@ -6,33 +6,25 @@ class GridData {
     }
 }
 
+// Array to hold all visible grid elements? (Currently not being used)
+var selectedElements = [];
+
+const gridElement = document.querySelector('.grid');
+const addButton = document.getElementById('addButton');
+const deleteButton = document.getElementById('deleteButton');
+const jsonButton = document.getElementById('jsonButton');
+
+
 // Create a grid using the Muuri framework that allows drag and drop
 var grid = new Muuri('.grid', { dragEnabled: true});
 
 main();
 
 function main() {
-    addElementButton();
-    createJSONButton();
-}
-
-function addElementButton() {
-    var addButton = document.createElement("BUTTON");        // Create a <button> element
-    var buttonText = document.createTextNode("Add");       // Create a text node
-    addButton.appendChild(buttonText);                                // Append the text to <button>
     addButton.addEventListener('click', addItem);
-    document.body.appendChild(addButton);     
-}
-
-// Create a button "Genderate JSON button"
-function createJSONButton() {
-    var jsonButton = document.createElement("BUTTON");        // Create a <button> element
-    var buttonText = document.createTextNode("Generate JSON");       // Create a text node
-    jsonButton.appendChild(buttonText);                                // Append the text to <button>
-    jsonButton.onclick = function() {
-        generateJSON(); 
-    }; 
-    document.body.appendChild(jsonButton);     
+    deleteButton.addEventListener('click', removeItems);
+    jsonButton.addEventListener('click', generateJSON);
+    gridElement.addEventListener('click', showSelection);
 }
 
 // Build the GridData object and convert it to a JSON string
@@ -43,22 +35,33 @@ function generateJSON() {
     document.write(jsonString)
 }
 
+// Add a grid item to DOM
 function addItem() {
-    var id = "100";
-    var fragment = create(
+    var id = "1x1";
+    var fragment = createDOMFragment(
         '<div class="item">' + 
             '<div class="item-content">' + id + '</div>' +
         '</div>');
+    grid.add(fragment.firstChild);
     document.body.insertBefore(fragment, document.body.childNodes[0]);
 }
 
-function create(htmlStr) {
+// Create document fragment for given html string
+function createDOMFragment(htmlStr) {
     var frag = document.createDocumentFragment(),
         temp = document.createElement('div');
     temp.innerHTML = htmlStr;
     while (temp.firstChild) {
         frag.appendChild(temp.firstChild);
     }
-    grid.add(frag.firstChild)
     return frag;
+}
+
+function removeItems() {
+    // TODO: Remove items permenantly from grid and array
+}
+
+function showSelection() {
+    // TODO: UI to show a box is selected
+    gridElement.style.color = "red";
 }
