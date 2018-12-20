@@ -57,8 +57,13 @@ function createDOMFragment(htmlStr) {
     return frag;
 }
 
+// Remove all items in the grid
 function removeItems() {
-    // TODO: Remove items permenantly from grid and array
+    const items = document.querySelectorAll('.item');
+    grid.remove(items);
+    for (var i=0; i<items.length; i++) {
+        gridElement.removeChild(items[i]);
+    }   
 }
 
 function showSelection() {
