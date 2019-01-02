@@ -16,7 +16,9 @@ const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 
 // Create a grid using the Muuri framework that allows drag and drop
-var grid = new Muuri('.grid', { dragEnabled: true});
+var grid = new Muuri('.grid', {
+    dragEnabled: true
+});
 
 main();
 
@@ -41,7 +43,7 @@ function addItem() {
     var id = gridElement.children.length + 1;
     var fragment = createDOMFragment(
         '<div class="item">' + 
-            '<div class="item-content">' + id + '</div>' +
+            '<div class="item-content-default">' + id + '</div>' +
         '</div>');
     grid.add(fragment.firstChild);
     document.body.insertBefore(fragment, document.body.childNodes[0]);
@@ -63,26 +65,29 @@ function createDOMFragment(htmlStr) {
 function removeItems() {
     const items = document.querySelectorAll('.item');
     grid.remove(items);
-    for (var i=0; i<items.length; i++) {
-        gridElement.removeChild(items[i]);
-    }   
+    items.forEach(item => {
+        gridElement.removeChild(item);
+    })
 }
 
 // Add selected item to array and show that it is selected
 function toggleSelectElement(event) {
-    for (i=0; i < gridElement.children.length; i++) {
-        if (event.target === gridElement.children[i].firstChild) {
-            if (selectedElements.includes(gridElement.children[i])) {
+    let items = document.querySelectorAll('.item');
+
+    items.forEach(element => {
+        if (event.target === element.firstChild) {
+            if (selectedElements.includes(element)) {
                 // Element already selected
-                selectedElements.splice(i, 1);
-                event.target.style.background = '#171717';
+                let index = selectedElements.indexOf(element);
+                selectedElements.splice(index, 1);
+                event.target.className = 'item-content-default';
             } else {
                 // Element has not yet been selected
-                selectedElements.push(gridElement.children[i]);
-                event.target.style.background = "red";
+                selectedElements.push(element);
+                event.target.className = 'item-content-selected';
             }
         }
-    }
+    })
 }
 
 /* Remove all items within the selectedElements array. 
