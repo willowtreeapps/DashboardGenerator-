@@ -23,9 +23,9 @@ main();
 function main() {
     addButton.addEventListener('click', addItem);
     deleteButton.addEventListener('click', removeItems);
-    deleteSelectedButton.addEventListener('click', removeSelectedItems, selectedElements);
+    deleteSelectedButton.addEventListener('click', removeSelectedItems);
     jsonButton.addEventListener('click', generateJSON);
-    document.addEventListener('click', selectElement, event);
+    document.addEventListener('click', toggleSelectElement);
 }
 
 // Build the GridData object and convert it to a JSON string
@@ -69,20 +69,29 @@ function removeItems() {
 }
 
 // Add selected item to array and show that it is selected
-function selectElement(event) {
+function toggleSelectElement(event) {
     for (i=0; i < gridElement.children.length; i++) {
         if (event.target === gridElement.children[i].firstChild) {
-         selectedElements.push(gridElement.children[i]);
-         event.target.style.background = "red";
+            if (selectedElements.includes(gridElement.children[i])) {
+                // Element already selected
+                selectedElements.splice(i, 1);
+                event.target.style.background = '#171717';
+            } else {
+                // Element has not yet been selected
+                selectedElements.push(gridElement.children[i]);
+                event.target.style.background = "red";
+            }
         }
     }
 }
 
-// TODO: Not working. Remove selected items from the grid
-function removeSelectedItems(selectedItems) {
-    grid.remove(selectedItems);
-    for (var i=0; i<selectedItems.length; i++) {
-        gridElement.removeChild(selectedItems[i].outterHTML);
-    }   
-    selectedItems = [];
+/* Remove all items within the selectedElements array. 
+   TODO: selectedElements is a global variable. Can we make this safer?
+*/
+function removeSelectedItems() {
+    grid.remove(selectedElements);
+    selectedElements.forEach(element => {
+        gridElement.removeChild(element);
+    })
+    selectedElements = [];
 }
