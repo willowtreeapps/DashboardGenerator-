@@ -49,3 +49,7 @@
   .item.muuri-item-releasing .item-content {
     background:rgb(255, 255, 255) ; opacity: 0.5;
   }
+
+  p {
+    color: white;
+  }
