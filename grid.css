@@ -1,55 +1,86 @@
 .grid {
     position: relative;
   }
-  .item {
-    position: absolute;
-    width: 200px;
-    height: 200px;
-    line-height: 200px;
-    margin: 5px;
-    z-index: 1;
-  }
-  .item.muuri-item-hidden {
-    z-index: 0;
-  }
-  .item.muuri-item-positioning {
-    z-index: 2;
-  }
-  .item.muuri-item-releasing {
-    z-index: 3;
-  }
-  .item.muuri-item-dragging {
-    z-index: 4;
-  }
-  .item-content-default {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    background: #171717;
-    font-size: 50px;
-    color:	#5F5F5F;
-    cursor: pointer;
-  }
 
-  .item-content-selected {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    background:red;
-    font-size: 50px;
-    color:	#5F5F5F;
-    cursor: pointer;
-  }
+.item {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  line-height: 200px;
+  margin: 5px;
+  z-index: 1;
+}
 
-  .item.muuri-item-dragging .item-content {
-    background:rgb(255, 255, 255) ; opacity: 0.5;
-  }
-  .item.muuri-item-releasing .item-content {
-    background:rgb(255, 255, 255) ; opacity: 0.5;
-  }
+.item.muuri-item-hidden {
+  z-index: 0;
+}
 
-  p {
-    color: white;
-  }
+.item.muuri-item-positioning {
+  z-index: 2;
+}
+
+.item.muuri-item-releasing {
+  z-index: 3;
+}
+
+.item.muuri-item-dragging {
+  z-index: 4;
+}
+
+.item-content-default {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  background: #171717;
+  font-size: 50px;
+  color:	#5F5F5F;
+  cursor: pointer;
+}
+
+.item-content-selected {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  background:red;
+  font-size: 50px;
+  color:	#5F5F5F;
+  cursor: pointer;
+}
+
+.item.muuri-item-dragging .item-content {
+  background:rgb(255, 255, 255) ; opacity: 0.5;
+}
+
+.item.muuri-item-releasing .item-content {
+  background:rgb(255, 255, 255) ; opacity: 0.5;
+}
+
+.text {
+  color: white;
+}
+
+.grouping {
+  margin-bottom: 15px;
+}
+
+#mainActionSection {
+  text-align: center;
+  margin-top: 50px;
+}
+
+#jsonButton {
+  background-color: 	rgb(0,128,128);
+  color: white;
+  position: relative;
+  top: 50%
+}
+
+#createButton {
+  background-color: green;
+  color: white;
+}
+
+
+

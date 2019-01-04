@@ -33,29 +33,48 @@ class GridSize {
     }
 }
 
+class Widget {
+    constructor(col, row, width, height, widget, job) {
+        this.col = col;
+        this.row = row;
+        this.width = width;
+        this.height = height;
+        this.widget = widget;
+        this.job = job;
+    }
+}
+
 // Array to hold all visible grid elements? (Currently not being used)
 var selectedElements = [];
 
 const titleInput = document.getElementById("titleInput");
 const titleVisibleToggle = document.getElementById("titleVisibleToggle");
+
+const columnInput = document.getElementById("columnInput");
+const rowInput = document.getElementById("rowInput");
+const createButton = document.getElementById("createButton");
+
 const gridElement = document.querySelector('.grid');
-const addButton = document.getElementById('addButton');
+
 const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
-const jsonLabel = document.getElementById('jsonParagraph');
 
 // Create a grid using the Muuri framework that allows drag and drop
 var grid = new Muuri('.grid', {
-    dragEnabled: true
+    dragEnabled: true,
+    layoutOnResize: true
 });
 
 setup();
 
 function setup() {
     titleInput.placeholder = "Enter title";
+    columnInput.placeholder = "col";
+    rowInput.placeholder = "row";
+
     titleVisibleToggle.addEventListener('click', toggleTitleVisibility);
-    addButton.addEventListener('click', addItem);
+    createButton.addEventListener('click', createGridItems);
     deleteButton.addEventListener('click', removeItems);
     deleteSelectedButton.addEventListener('click', removeSelectedItems);
     jsonButton.addEventListener('click', generateJSON);
@@ -72,6 +91,28 @@ function toggleTitleVisibility() {
     } else {
         titleVisibleToggle.textContent = "Set Visible";
     }
+}
+
+// Creates a grid from the inputed column and rows
+function createGridItems() {
+    removeItems();
+    let numberOfColumns = columnInput.value;
+    let numberOfRow = rowInput.value;
+    let itemWidth =  window.innerWidth/numberOfColumns;
+
+    for (i=0; i<(numberOfColumns * numberOfRow); i++) {
+        addItem()
+    }
+
+    //TODO: Math needs some work. Breaks down after
+    const items = document.querySelectorAll('.item');
+    items.forEach(item => {
+        let margin = 5;
+        let margins = (margin * 2) * (numberOfColumns - 1);
+        item.style.setProperty('width', ((itemWidth - margins) + "px"));
+     })
+
+     grid.refreshItems().layout();
 }
 
 // Add a grid item to DOM
@@ -110,13 +151,19 @@ function generateJSON() {
     let title = titleInput.value;
     let titleVisible = isTitleVisible();
     let layout = new Layout(new GridSize(3, 2));
-    let widgets = [];
+    
+    var widgets = [];
+    const items = document.querySelectorAll('.item');
+    //TODO: The widgetObject has placeholders right now. Replace with real values.
+    items.forEach(item => {
+        let widgetObject = new Widget(1, 1, 1, 1, "", "");
+        widgets.push(widgetObject);
+    })
 
     var gridData = new GridData(
         titleInput.value, titleVisible, layout, widgets);
 
-    var jsonString = JSON.stringify(gridData)
-    jsonLabel.textContent = jsonString;
+    document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
 }
 
 // Add selected item to array and show that it is selected
@@ -154,4 +201,13 @@ function createDOMFragment(htmlStr) {
         frag.appendChild(temp.firstChild);
     }
     return frag;
+}
+
+// Prints height and witdth of items in pixels
+// TODO: Do math to get column and row size of grid
+function getItemSizes() {
+    let items = document.querySelectorAll('.item');
+    items.forEach(function (item, index) {
+        console.log("Index " + index + ": " + "(" + item.clientWidth + ", " + item.clientHeight +  ")");
+    })
 }
