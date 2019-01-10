@@ -45,7 +45,7 @@ class Widget {
 }
 
 // Array to hold all visible grid elements? (Currently not being used)
-var selectedElements = [];
+const selectedElements = [];
 
 const titleInput = document.getElementById("titleInput");
 const titleVisibleToggle = document.getElementById("titleVisibleToggle");
@@ -60,10 +60,55 @@ const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 
+const itemWidth = 200;
+const itemHeight = 200;
+
+const widgetsAndJobsList = 
+[
+'appbot-topics',
+'appbot-wordcloud',
+'apteligent-crashtrend',
+'blackduck-stats',
+'board-cycle',
+'bugsnag-error-occurances',
+'bugsnag-error-trend',
+'build-status',
+'burndown',
+'checkmarx-scan-queue',
+'checkmarx-top-risks',
+'checkmarx-top-scantime',
+'checkmarx_stats',
+'environment-commit-status',
+'google-drive',
+'isitup',
+'onelogin-locked-accounts',
+'pending-pr-count',
+'picture-of-the-day',
+'security-monkey',
+'sentinel-one-inactive',
+'sentinel-one-threats',
+'sentinel-one',
+'sprint-goals',
+'sprinthealth-history',
+'teamcity-build-queue',
+'teamcity-build-status',
+'teamcity-test-trend',
+'test-results',
+'testrail_run-count',
+'testrail_run-results',
+'tracker-burnup',
+'warcraft-profile',
+'zone-clock'
+]
+
+const jobsListName = 'jobs'
+const widgetsListName = 'widgets'
+
 // Create a grid using the Muuri framework that allows drag and drop
-var grid = new Muuri('.grid', {
-    dragEnabled: true,
-    layoutOnResize: true
+const grid = new Muuri('.grid', {
+    dragEnabled: false,
+    layoutOnResize: true,
+    layout: createLayout
 });
 
 setup();
@@ -81,7 +126,9 @@ function setup() {
     document.addEventListener('click', toggleSelectElement);
 }
 
-/* Event Actions */
+/*
+****************************************************** Action Methods ******************************************************
+*/
 
 // Toggle to change title visibility
 // TODO: Make a custom button with a state? 
@@ -96,34 +143,38 @@ function toggleTitleVisibility() {
 // Creates a grid from the inputed column and rows
 function createGridItems() {
     removeItems();
-    let numberOfColumns = columnInput.value;
-    let numberOfRow = rowInput.value;
-    let itemWidth =  window.innerWidth/numberOfColumns;
+    const numberOfColumns = columnInput.value;
+    const numberOfRows = rowInput.value;
+    const itemWidth =  window.innerWidth / numberOfColumns;
 
-    for (i=0; i<(numberOfColumns * numberOfRow); i++) {
-        addItem()
+    let index = 0
+    for (row = 0; row < (numberOfRows); row++) {
+        for (col = 0; col < (numberOfColumns); col++) {
+            addItem();
+        }
     }
-
-    //TODO: Math needs some work. Breaks down after
-    const items = document.querySelectorAll('.item');
-    items.forEach(item => {
-        let margin = 5;
-        let margins = (margin * 2) * (numberOfColumns - 1);
-        item.style.setProperty('width', ((itemWidth - margins) + "px"));
-     })
-
+    
      grid.refreshItems().layout();
 }
 
 // Add a grid item to DOM
 function addItem() {
-    var id = gridElement.children.length + 1;
-    var fragment = createDOMFragment(
+    const id = gridElement.children.length + 1;
+    let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, (id - 1));
+    let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, (id - 1));
+    const fragment = createDOMFragment(
         '<div class="item">' + 
-            '<div class="item-content-default">' + id + '</div>' +
+            '<div class="item-content-default">' + 
+            id + 
+                '<div class="dropdown_lists">' + 
+                    jobsDropDownHtml + 
+                    widgetsDropDownList + 
+                '</div>' + 
+            '</div>' + 
         '</div>');
     grid.add(fragment.firstChild);
-    document.body.insertBefore(fragment, document.body.childNodes[0]);
+    document.body.insertBefore(fragment, document.body.childNodes[id - 1]);
+
 }
 
 // Remove all items in the grid
@@ -146,35 +197,15 @@ function removeSelectedItems() {
     selectedElements = [];
 }
 
-// Build the GridData object and convert it to a JSON string
-function generateJSON() {
-    let title = titleInput.value;
-    let titleVisible = isTitleVisible();
-    let layout = new Layout(new GridSize(3, 2));
-    
-    var widgets = [];
-    const items = document.querySelectorAll('.item');
-    //TODO: The widgetObject has placeholders right now. Replace with real values.
-    items.forEach(item => {
-        let widgetObject = new Widget(1, 1, 1, 1, "", "");
-        widgets.push(widgetObject);
-    })
-
-    var gridData = new GridData(
-        titleInput.value, titleVisible, layout, widgets);
-
-    document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
-}
-
 // Add selected item to array and show that it is selected
 function toggleSelectElement(event) {
-    let items = document.querySelectorAll('.item');
+    const items = document.querySelectorAll('.item');
 
     items.forEach(element => {
         if (event.target === element.firstChild) {
             if (selectedElements.includes(element)) {
                 // Element already selected
-                let index = selectedElements.indexOf(element);
+                const index = selectedElements.indexOf(element);
                 selectedElements.splice(index, 1);
                 event.target.className = 'item-content-default';
             } else {
@@ -186,15 +217,116 @@ function toggleSelectElement(event) {
     })
 }
 
-/* Helpers */
+/*
+****************************************************** Layout ******************************************************
+*/
 
-function isTitleVisible() {
-    return titleVisibleToggle.textContent === "Set Hidden"
+function createLayout(items, gridWidth, gridHeight) {
+    // The layout data object. Muuri will read this data and position the items
+    // based on it.
+    var layout = {
+      // The layout item slots (left/top coordinates).
+      slots: [],
+      // The layout's total width.
+      width: itemWidth,
+      // The layout's total height.
+      height: itemHeight,
+      // Should Muuri set the grid's width after layout?
+      setWidth: true,
+      // Should Muuri set the grid's height after layout?
+      setHeight: true
+    };
+
+    // Calculate the slots.
+    
+    const numberOfColumns = columnInput.value;
+    const numberOfRows = rowInput.value;
+    const margin = 5;
+
+    let item;
+    let x = margin;
+    let y = 0;
+
+    let width = itemWidth;
+    let height = itemHeight;
+
+    for (let row = 0; row < numberOfRows; row++) {
+        for (let column = 0; column < numberOfColumns; column++) {
+            if(column == 0  && row > 0) {
+                x = margin
+                y += height + margin;
+              } else if (column > 0) {
+                x += width + margin;
+              }
+        
+            layout.slots.push(x, y);
+        }
+    }
+
+    // Calculate the layout's total width and height. 
+    layout.width = width * numberOfColumns;
+    layout.height = height * numberOfRows;
+
+    return layout;
+  }
+
+  /*
+****************************************************** JSON Generation ******************************************************
+*/
+
+// Build the GridData object and convert it to a JSON string
+function generateJSON() {
+    const title = titleInput.value;
+    const titleVisible = isTitleVisible();
+
+    const numberOfColumns = columnInput.value;
+    const numberOfRows = rowInput.value;
+
+    const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
+    
+    const widgets = [];
+    const items = document.querySelectorAll('.item');
+    
+    items.forEach(function(item, index) {
+        const selectedJob = getSelectedListElement(jobsListName, index);
+        const selectedWidget = getSelectedListElement(widgetsListName, index);
+
+        const column = Math.floor(index % numberOfColumns);
+        const row = Math.floor(index / numberOfColumns);
+
+        //TODO: once blocks can merge need to update this to represent how wide or tall the 'final' block is
+        const blockWidth = 1;
+        const blockHeight = 1;
+
+        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget);
+        widgets.push(widgetObject);
+    })
+
+    const gridData = new GridData(
+        titleInput.value, titleVisible, layout, widgets);
+
+    document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
+}
+
+/*
+****************************************************** HTML Generation ******************************************************
+*/
+
+function createDropDownHTML(dropDownListTitle, dropDownList, itemID) {
+    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + '">';
+    for(index in dropDownList) {
+        const itemName = dropDownList[index];
+        html+= '<option value="' + itemName + '">' + itemName + '</option>';
+    }
+    html+= '</select>';
+
+    console.log(html);
+    return html;
 }
 
 // Create document fragment for given html string
 function createDOMFragment(htmlStr) {
-    var frag = document.createDocumentFragment(),
+    const frag = document.createDocumentFragment(),
         temp = document.createElement('div');
     temp.innerHTML = htmlStr;
     while (temp.firstChild) {
@@ -202,12 +334,32 @@ function createDOMFragment(htmlStr) {
     }
     return frag;
 }
+/*
+****************************************************** Helpers ******************************************************
+*/
 
-// Prints height and witdth of items in pixels
-// TODO: Do math to get column and row size of grid
-function getItemSizes() {
-    let items = document.querySelectorAll('.item');
-    items.forEach(function (item, index) {
-        console.log("Index " + index + ": " + "(" + item.clientWidth + ", " + item.clientHeight +  ")");
-    })
+function isTitleVisible() {
+    return titleVisibleToggle.textContent === "Set Hidden"
 }
+
+function getSelectedListElement(listName, itemID) {
+    const itemSelectedListName = itemSelectListName(listName, itemID);
+    const listElement = document.getElementById(itemSelectedListName);
+    const selectedValue = listElement.options[listElement.selectedIndex].text;
+    return selectedValue;
+}
+
+function itemSelectListName(baseListName, itemID) {
+    const name = baseListName + '_' + itemID;
+    console.log(name)
+    return name
+}
+
+// // Prints height and witdth of items in pixels
+// // TODO: Do math to get column and row size of grid
+// function getItemSizes() {
+//     const items = document.querySelectorAll('.item');
+//     items.forEach(function (item, index) {
+//         console.log("Index " + index + ": " + "(" + item.clientWidth + ", " + item.clientHeight +  ")");
+//     })
+// }
