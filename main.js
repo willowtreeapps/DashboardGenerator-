@@ -145,13 +145,9 @@ function createGridItems() {
     removeItems();
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
-    const itemWidth =  window.innerWidth / numberOfColumns;
 
-    let index = 0
-    for (row = 0; row < (numberOfRows); row++) {
-        for (col = 0; col < (numberOfColumns); col++) {
-            addItem();
-        }
+    for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
+        addItem();
     }
     
      grid.refreshItems().layout();
@@ -159,13 +155,13 @@ function createGridItems() {
 
 // Add a grid item to DOM
 function addItem() {
-    const id = gridElement.children.length + 1;
-    let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, (id - 1));
-    let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, (id - 1));
+    const id = gridElement.children.length
+    let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id);
+    let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id);
     const fragment = createDOMFragment(
         '<div class="item">' + 
             '<div class="item-content-default">' + 
-            id + 
+            (id + 1) + 
                 '<div class="dropdown_lists">' + 
                     jobsDropDownHtml + 
                     widgetsDropDownList + 
@@ -173,7 +169,7 @@ function addItem() {
             '</div>' + 
         '</div>');
     grid.add(fragment.firstChild);
-    document.body.insertBefore(fragment, document.body.childNodes[id - 1]);
+    document.body.insertBefore(fragment, document.body.childNodes[id]);
 
 }
 
@@ -224,7 +220,7 @@ function toggleSelectElement(event) {
 function createLayout(items, gridWidth, gridHeight) {
     // The layout data object. Muuri will read this data and position the items
     // based on it.
-    var layout = {
+    const layout = {
       // The layout item slots (left/top coordinates).
       slots: [],
       // The layout's total width.
@@ -243,12 +239,11 @@ function createLayout(items, gridWidth, gridHeight) {
     const numberOfRows = rowInput.value;
     const margin = 5;
 
-    let item;
     let x = margin;
     let y = 0;
 
-    let width = itemWidth;
-    let height = itemHeight;
+    const width = itemWidth;
+    const height = itemHeight;
 
     for (let row = 0; row < numberOfRows; row++) {
         for (let column = 0; column < numberOfColumns; column++) {
