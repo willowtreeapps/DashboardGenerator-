@@ -1,10 +1,11 @@
 // Container for data to be included in JSON file for config
 class GridData {
-    constructor(title, titleVisible, layout, widgets) {
+    constructor(title, titleVisible, layout, widgets, config) {
         this.title = title;
         this.titleVisible = titleVisible;
         this.layout = layout;
         this.widgets = widgets;
+        this.config = config;
     }
 }
 
@@ -34,13 +35,14 @@ class GridSize {
 }
 
 class Widget {
-    constructor(col, row, width, height, widget, job) {
+    constructor(col, row, width, height, widget, job, config) {
         this.col = col;
         this.row = row;
         this.width = width;
         this.height = height;
         this.widget = widget;
         this.job = job;
+        this.config = config;
     }
 }
 
@@ -288,34 +290,66 @@ function generateJSON() {
     const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
     
     const widgets = [];
+    const configurations = [];
     const items = document.querySelectorAll('.item');
     
     items.forEach(function(item, index) {
+        const column = Math.floor(index % numberOfColumns);
+        const row = Math.floor(index / numberOfColumns);
         let selectedJob = getSelectedListElement(jobsListName, index);
         let selectedWidget = getSelectedListElement(widgetsListName, index);
 
         if (selectedJob === jobsPlaceholderMessage) {
-            selectedJob = ''
+            selectedJob = '';
         }
         if (selectedWidget === widgetsPlaceholderMessage) {
-            selectedWidget = ''
+            selectedWidget = '';
         }
 
-        const column = Math.floor(index % numberOfColumns);
-        const row = Math.floor(index / numberOfColumns);
+        let configJSONString = getItemConfigText(index);
+        let configJSONName;
+        if (configJSONString.indexOf('{') != 0) {
+            configJSONString = '{' + configJSONString + '}';
+        }
+        let configJSON = parseJSONString(configJSONString, column, row);
+        
+        if (!isJSONEmpty(configJSON)) {
+            configurations.push(configJSON);
+        }
 
         //TODO: once blocks can merge need to update this to represent how wide or tall the 'final' block is
         const blockWidth = 1;
         const blockHeight = 1;
 
-        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget);
+        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONName);
         widgets.push(widgetObject);
     })
 
     const gridData = new GridData(
-        titleInput.value, titleVisible, layout, widgets);
+        title, titleVisible, layout, widgets, configurations);
 
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
+}
+
+function parseJSONString(jsonString, column, row) {
+    let configJSON;
+    let message;
+    let color;
+    try {
+        configJSON = JSON.parse(jsonString);
+        configJSONName = Object.keys(configJSON)[0];
+        message = 'SUCCESS!!!';
+        color = 'green'
+      }
+      catch(err) {
+        message = 'gridRow: ' + row + ', gridColumn: ' + column + ' ERROR : ' + err.message;
+        color = 'red'
+      }
+      let jsonMessageElement = document.getElementById("jsonGenerationMessage");
+      jsonMessageElement.innerHTML = message;
+      jsonMessageElement.style.color = color;
+
+      return configJSON;
 }
 
 /*
@@ -366,10 +400,26 @@ function getSelectedListElement(listName, itemID) {
     return selectedValue;
 }
 
+function getItemConfigText(itemID) {
+    const configTextFieldName = itemConfigTextName(itemID);
+    const textFieldElement = document.getElementById(configTextFieldName);
+    const configName = textFieldElement.value;
+    return configName;
+}
+
+function isJSONEmpty(obj) {
+    for(var key in obj) {
+        if(obj.hasOwnProperty(key)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function itemSelectListName(baseListName, itemID) {
     const name = baseListName + '_' + itemID;
     console.log(name)
-    return name
+    return name.trim();
 }
 
 function itemConfigTextName(itemID) {
