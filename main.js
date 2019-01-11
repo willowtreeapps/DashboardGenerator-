@@ -104,6 +104,9 @@ const widgetsAndJobsList =
 const jobsListName = 'jobs'
 const widgetsListName = 'widgets'
 
+const jobsPlaceholderMessage = 'Select a Job';
+const widgetsPlaceholderMessage = 'Select a Widget'
+
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid', {
     dragEnabled: false,
@@ -156,8 +159,8 @@ function createGridItems() {
 // Add a grid item to DOM
 function addItem() {
     const id = gridElement.children.length
-    let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id);
-    let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id);
+    let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id, jobsPlaceholderMessage);
+    let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
     const fragment = createDOMFragment(
         '<div class="item">' + 
             '<div class="item-content-default">' + 
@@ -283,8 +286,15 @@ function generateJSON() {
     const items = document.querySelectorAll('.item');
     
     items.forEach(function(item, index) {
-        const selectedJob = getSelectedListElement(jobsListName, index);
-        const selectedWidget = getSelectedListElement(widgetsListName, index);
+        let selectedJob = getSelectedListElement(jobsListName, index);
+        let selectedWidget = getSelectedListElement(widgetsListName, index);
+
+        if (selectedJob === jobsPlaceholderMessage) {
+            selectedJob = ''
+        }
+        if (selectedWidget === widgetsPlaceholderMessage) {
+            selectedWidget = ''
+        }
 
         const column = Math.floor(index % numberOfColumns);
         const row = Math.floor(index / numberOfColumns);
@@ -307,10 +317,11 @@ function generateJSON() {
 ****************************************************** HTML Generation ******************************************************
 */
 
-function createDropDownHTML(dropDownListTitle, dropDownList, itemID) {
+function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + '">';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
+        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>'
         html+= '<option value="' + itemName + '">' + itemName + '</option>';
     }
     html+= '</select>';
