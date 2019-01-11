@@ -60,8 +60,8 @@ const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 
-const itemWidth = 200;
-const itemHeight = 200;
+const itemWidth = 250;
+const itemHeight = 250;
 
 const widgetsAndJobsList = 
 [
@@ -161,6 +161,7 @@ function addItem() {
     const id = gridElement.children.length
     let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
+    let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
         '<div class="item">' + 
             '<div class="item-content-default">' + 
@@ -168,11 +169,15 @@ function addItem() {
                 '<div class="dropdown_lists">' + 
                     jobsDropDownHtml + 
                     widgetsDropDownList + 
+                    configTextField +
                 '</div>' + 
             '</div>' + 
         '</div>');
     grid.add(fragment.firstChild);
     document.body.insertBefore(fragment, document.body.childNodes[id]);
+
+    const configElement = document.getElementById(itemConfigTextName(id));
+    configElement.placeholder = "config name";
 
 }
 
@@ -326,8 +331,14 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
     }
     html+= '</select>';
 
-    console.log(html);
     return html;
+}
+
+function createConfigTextField(itemID) {
+    let textFieldName = itemConfigTextName(itemID);
+    let html = '<input id="' + textFieldName + '" type="text">' + 
+    '</input>';
+    return html
 }
 
 // Create document fragment for given html string
@@ -359,6 +370,10 @@ function itemSelectListName(baseListName, itemID) {
     const name = baseListName + '_' + itemID;
     console.log(name)
     return name
+}
+
+function itemConfigTextName(itemID) {
+    return 'config_' + itemID;
 }
 
 // // Prints height and witdth of items in pixels
