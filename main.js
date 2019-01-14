@@ -129,6 +129,8 @@ function setup() {
     deleteSelectedButton.addEventListener('click', removeSelectedItems);
     jsonButton.addEventListener('click', generateJSON);
     document.addEventListener('click', toggleSelectElement);
+
+    hideElement("saveSection");
 }
 
 /*
@@ -329,6 +331,7 @@ function generateJSON() {
         title, titleVisible, layout, widgets, configurations);
 
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
+    showElement("saveSection");
 }
 
 function parseJSONString(jsonString, column, row) {
@@ -385,12 +388,48 @@ function createDOMFragment(htmlStr) {
     }
     return frag;
 }
+
+/*
+****************************************************** Save Generated JSON ******************************************************
+*/
+
+function copyTextToClipboard() {
+    const text = document.getElementById('json').innerHTML;
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+  
+    try {
+        const successful = document.execCommand('copy');
+        const msg = successful ? 'successful' : 'unsuccessful';
+        console.log('Fallback: Copying text command was ' + msg);
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+    }
+  
+    document.body.removeChild(textArea);
+  }
+
 /*
 ****************************************************** Helpers ******************************************************
 */
 
 function isTitleVisible() {
     return titleVisibleToggle.textContent === "Set Hidden"
+}
+
+function showElement(elementIDString) {
+    const element = document.getElementById(elementIDString);
+    console.log(element);
+    element.style.visibility = "visible";
+}
+
+function hideElement(elementIDString) {
+    const element = document.getElementById(elementIDString);
+    console.log(element);
+    element.style.visibility = "hidden";
 }
 
 function getSelectedListElement(listName, itemID) {
