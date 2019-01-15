@@ -46,7 +46,6 @@ class Widget {
     }
 }
 
-// Array to hold all visible grid elements? (Currently not being used)
 const selectedElements = [];
 
 const titleInput = document.getElementById("titleInput");
@@ -132,28 +131,7 @@ function setup() {
 
     hideElement("saveSection");
 
-    // Check for the various File API support.
-    if (window.File && window.FileReader && window.FileList && window.Blob) {
-        
-
-        input = document.getElementById('input');
-        if (!input) {
-          alert("Um, couldn't find the fileinput element.");
-       }
-       else if (!input.files) {
-          alert("This browser doesn't seem to support the `files` property of file inputs.");
-       }
-       else {
-            console.log("This should work when a file is selected");
-            // Great success! All the File APIs are supported.
-            // const fileInputElement = document.getElementById("input");
-            // console.log(fileInputElement);
-            // fileInputElement.addEventListener("change", handleFiles, false);
-       }
-
-    } else {
-        alert('The File APIs are not fully supported in this browser.');
-    }
+    checkBowserSupportsFilesAPI();
 }
 
 /*
@@ -330,8 +308,6 @@ function createGridFromJSON(jsonObject) {
     createGridItems()
 
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
-        // addItem(count);
-        //TODO need to configure grid as it was configured before!
         const widget = jsonObject.widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
@@ -356,8 +332,6 @@ function createGridFromJSON(jsonObject) {
             configElement.value = widgetConfig;
         }
     }
-    
-    //  grid.refreshItems().layout();
 }
 
 function handleFiles(filesList) {
@@ -509,6 +483,25 @@ function copyTextToClipboard() {
 /*
 ****************************************************** Helpers ******************************************************
 */
+
+function checkBowserSupportsFilesAPI() {
+    // Check for the various File API support.
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+        input = document.getElementById('input');
+        if (!input) {
+          alert("Um, couldn't find the fileinput element.");
+       }
+       else if (!input.files) {
+          alert("This browser doesn't seem to support the `files` property of file inputs.");
+       }
+       else {
+            // Great success! All the File APIs are supported.
+            console.log("This should work when a file is selected");
+       }
+    } else {
+        alert('The File APIs are not fully supported in this browser.');
+    }
+}
 
 function isTitleVisible() {
     return titleVisibleToggle.textContent === "Set Hidden"
