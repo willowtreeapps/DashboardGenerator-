@@ -14,6 +14,7 @@
     <h1 class="text">WTDashboardJSONGenerator</h1>
     <h3 class="text">Instructions:</h3>
     <ul>
+        <p class="text">Upload a JSON file to generate a completed grid, or create a grid from scratch.</p>
         <p class="text">Enter column and row information to generate grid.</p>
         <p class="text">Drag and drop to reorder.</p>
         <p class="text">Select elements and click "Merge" button to create larger elements.</p>
@@ -21,6 +22,10 @@
     </ul>
 </header>
 <body>
+
+    <div class = "grouping" id = "uploadSection">
+        <input type="file" id="input" onchange="handleFiles(this.files)">
+    </div>
 
     <div class = "grouping" id = "titleSection">
         <input id="titleInput" type="text">

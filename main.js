@@ -131,6 +131,29 @@ function setup() {
     document.addEventListener('click', toggleSelectElement);
 
     hideElement("saveSection");
+
+    // Check for the various File API support.
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+        
+
+        input = document.getElementById('input');
+        if (!input) {
+          alert("Um, couldn't find the fileinput element.");
+       }
+       else if (!input.files) {
+          alert("This browser doesn't seem to support the `files` property of file inputs.");
+       }
+       else {
+            console.log("This should work when a file is selected");
+            // Great success! All the File APIs are supported.
+            // const fileInputElement = document.getElementById("input");
+            // console.log(fileInputElement);
+            // fileInputElement.addEventListener("change", handleFiles, false);
+       }
+
+    } else {
+        alert('The File APIs are not fully supported in this browser.');
+    }
 }
 
 /*
@@ -141,10 +164,18 @@ function setup() {
 // TODO: Make a custom button with a state? 
 function toggleTitleVisibility() {
     if (titleVisibleToggle.textContent === "Set Visible") {
-        titleVisibleToggle.textContent = "Set Hidden";
+        setTitleInvisible();
     } else {
-        titleVisibleToggle.textContent = "Set Visible";
+        setTitleVisible();
     }
+}
+
+function setTitleVisible() {
+    titleVisibleToggle.textContent = "Set Visible";
+}
+
+function setTitleInvisible() {
+    titleVisibleToggle.textContent = "Set Hidden";
 }
 
 // Creates a grid from the inputed column and rows
@@ -154,15 +185,14 @@ function createGridItems() {
     const numberOfRows = rowInput.value;
 
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
-        addItem();
+        addItem(count);
     }
     
      grid.refreshItems().layout();
 }
 
 // Add a grid item to DOM
-function addItem() {
-    const id = gridElement.children.length
+function addItem(id) {
     let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
@@ -277,6 +307,70 @@ function createLayout(items, gridWidth, gridHeight) {
     return layout;
   }
 
+   /*
+****************************************************** Populating From Uploaded JSON ******************************************************
+*/
+
+function createGridFromJSON(jsonObject) {
+    const title = jsonObject.title;
+    const titleVisible = jsonObject.titleVisible;
+    const numberOfColumns = jsonObject.layout.gridSize.columns;
+    const numberOfRows = jsonObject.layout.gridSize.rows;
+
+    titleInput.value = title;
+    if(titleVisible) {
+        setTitleVisible();
+    } else {
+        setTitleInvisible();
+    }
+
+    columnInput.value = numberOfColumns;
+    rowInput.value = numberOfRows;
+
+    createGridItems()
+
+    for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
+        // addItem(count);
+        //TODO need to configure grid as it was configured before!
+        const widget = jsonObject.widgets[count];
+        const widgetCol = widget.col;
+        const widgetRow = widget.row;
+        const widgetWidth = widget.width;
+        const widgetHeight = widget.height;
+        const widgetJob = widget.job;
+        const widgetWidget = widget.widget;
+        const widgetConfig = widget.config;
+
+        let selectedJob = getSelectListElement(jobsListName, count);
+        let selectedWidget = getSelectListElement(widgetsListName, count);
+
+        selectedJob.value = widgetJob;
+        selectedWidget.value = widgetWidget;
+
+        console.log('selected Job: ' + selectedJob);
+        console.log('Widget JOB: ' + widgetJob);
+
+        if (widgetConfig && widgetConfig.length > 2) {
+            const configElement = document.getElementById(itemConfigTextName(count));
+            console.log(configElement);
+            configElement.value = widgetConfig;
+        }
+    }
+    
+    //  grid.refreshItems().layout();
+}
+
+function handleFiles(filesList) {
+    const file = filesList[0];
+    fr = new FileReader();
+    fr.onload = function(e) {
+        var rawLog = fr.result;
+        let jsonObject = parseJSONString(rawLog, -1, -1);
+        createGridFromJSON(jsonObject);
+    };
+    fr.readAsText(file);
+}
+
   /*
 ****************************************************** JSON Generation ******************************************************
 */
@@ -298,8 +392,8 @@ function generateJSON() {
     items.forEach(function(item, index) {
         const column = Math.floor(index % numberOfColumns);
         const row = Math.floor(index / numberOfColumns);
-        let selectedJob = getSelectedListElement(jobsListName, index);
-        let selectedWidget = getSelectedListElement(widgetsListName, index);
+        let selectedJob = getSelectedListElementValue(jobsListName, index);
+        let selectedWidget = getSelectedListElementValue(widgetsListName, index);
 
         if (selectedJob === jobsPlaceholderMessage) {
             selectedJob = '';
@@ -313,17 +407,17 @@ function generateJSON() {
         if (configJSONString.indexOf('{') != 0) {
             configJSONString = '{' + configJSONString + '}';
         }
-        let configJSON = parseJSONString(configJSONString, column, row);
+        let configJSONMessage = parseJSONString(configJSONString, column, row);
         
-        if (!isJSONEmpty(configJSON)) {
-            configurations.push(configJSON);
+        if (!isJSONEmpty(configJSONMessage)) {
+            configurations.push(configJSONMessage);
         }
 
         //TODO: once blocks can merge need to update this to represent how wide or tall the 'final' block is
         const blockWidth = 1;
         const blockHeight = 1;
 
-        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONName);
+        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONString);
         widgets.push(widgetObject);
     })
 
@@ -422,21 +516,24 @@ function isTitleVisible() {
 
 function showElement(elementIDString) {
     const element = document.getElementById(elementIDString);
-    console.log(element);
     element.style.visibility = "visible";
 }
 
 function hideElement(elementIDString) {
     const element = document.getElementById(elementIDString);
-    console.log(element);
     element.style.visibility = "hidden";
 }
 
-function getSelectedListElement(listName, itemID) {
-    const itemSelectedListName = itemSelectListName(listName, itemID);
-    const listElement = document.getElementById(itemSelectedListName);
+function getSelectedListElementValue(listName, itemID) {
+    const listElement = getSelectListElement(listName, itemID);
     const selectedValue = listElement.options[listElement.selectedIndex].text;
     return selectedValue;
+}
+
+function getSelectListElement(listName, itemID) {
+    const itemSelectedListName = itemSelectListName(listName, itemID);
+    const listElement = document.getElementById(itemSelectedListName);
+    return listElement;
 }
 
 function getItemConfigText(itemID) {
