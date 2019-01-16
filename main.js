@@ -110,7 +110,7 @@ const widgetsPlaceholderMessage = 'Select a Widget'
 
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid', {
-    dragEnabled: false,
+    dragEnabled: true,
     layoutOnResize: true,
     layout: createLayout
 });
@@ -159,6 +159,7 @@ function setTitleInvisible() {
 // Creates a grid from the inputed column and rows
 function createGridItems() {
     removeItems();
+
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
 
@@ -175,7 +176,7 @@ function addItem(id) {
     let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="item">' + 
+        '<div class="item" id="' + id + '">' + 
             '<div class="item-content-default">' + 
             (id + 1) + 
                 '<div class="dropdown_lists">' + 
@@ -351,6 +352,8 @@ function handleFiles(filesList) {
 
 // Build the GridData object and convert it to a JSON string
 function generateJSON() {
+    grid.synchronize();//reflect any order changes
+
     const title = titleInput.value;
     const titleVisible = isTitleVisible();
 
@@ -363,11 +366,13 @@ function generateJSON() {
     const configurations = [];
     const items = document.querySelectorAll('.item');
     
-    items.forEach(function(item, index) {
-        const column = Math.floor(index % numberOfColumns);
-        const row = Math.floor(index / numberOfColumns);
-        let selectedJob = getSelectedListElementValue(jobsListName, index);
-        let selectedWidget = getSelectedListElementValue(widgetsListName, index);
+    for(i = 0; i < items.length; i++) {
+        let newIndex = items[i].getAttribute('id');
+
+        const column = Math.floor(newIndex % numberOfColumns);
+        const row = Math.floor(newIndex / numberOfColumns);
+        let selectedJob = getSelectedListElementValue(jobsListName, newIndex);
+        let selectedWidget = getSelectedListElementValue(widgetsListName, newIndex);
 
         if (selectedJob === jobsPlaceholderMessage) {
             selectedJob = '';
@@ -376,7 +381,7 @@ function generateJSON() {
             selectedWidget = '';
         }
 
-        let configJSONString = getItemConfigText(index);
+        let configJSONString = getItemConfigText(newIndex);
         let configJSONName;
         if (configJSONString.indexOf('{') != 0) {
             configJSONString = '{' + configJSONString + '}';
@@ -393,7 +398,7 @@ function generateJSON() {
 
         const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONString);
         widgets.push(widgetObject);
-    })
+    }
 
     const gridData = new GridData(
         title, titleVisible, layout, widgets, configurations);
@@ -428,7 +433,7 @@ function parseJSONString(jsonString, column, row) {
 */
 
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
-    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + '">';
+    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + '">';//TODO add onlick to stop propagation to parent div when selecting item
     for(index in dropDownList) {
         const itemName = dropDownList[index];
         html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>'
@@ -547,7 +552,6 @@ function isJSONEmpty(obj) {
 
 function itemSelectListName(baseListName, itemID) {
     const name = baseListName + '_' + itemID;
-    console.log(name)
     return name.trim();
 }
 
