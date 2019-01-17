@@ -184,7 +184,14 @@ function createGridItems() {
 }
 
 function addCell() {
+    const numberOfColumns = columnInput.value;
+    const numberOfRows = rowInput.value;
+
     const id = grid.getItems().length;
+    if (id >= (numberOfRows * numberOfColumns)) {
+        //Only allow user to add up to the max amount of cells.
+        return;
+    }
     addItem(id);
 }
 
