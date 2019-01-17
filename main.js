@@ -46,7 +46,7 @@ class Widget {
     }
 }
 
-const selectedElements = [];
+let selectedElements = [];
 
 const titleInput = document.getElementById("titleInput");
 const titleVisibleToggle = document.getElementById("titleVisibleToggle");
