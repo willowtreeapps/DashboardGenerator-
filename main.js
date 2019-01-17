@@ -108,11 +108,22 @@ const widgetsListName = 'widgets'
 const jobsPlaceholderMessage = 'Select a Job';
 const widgetsPlaceholderMessage = 'Select a Widget'
 
+let selectClicked = false;//prevent grid items from dragging when select list is clicked
+
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid', {
     dragEnabled: true,
     layoutOnResize: true,
-    layout: createLayout
+    layout: createLayout,
+    dragStartPredicate: function (item, e) {
+        // Start moving the item after the item has been dragged for one second.
+
+        if (e.isFinal) {
+            return Muuri.ItemDrag.defaultStartPredicate(item, e);
+        }
+        // console.log('Drag Start Predicate');
+        return !selectClicked;
+      }
 });
 
 setup();
@@ -176,8 +187,11 @@ function addItem(id) {
     let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="item" id="' + id + '">' + 
-            '<div class="item-content-default">' + 
+        '<div class="item" id="' + id +
+         '">' + 
+            '<div class="item-content-default"' +
+            '" onmousedown="return handleListEvent(event)"' + 
+             ' >' + 
             (id + 1) + 
                 '<div class="dropdown_lists">' + 
                     jobsDropDownHtml + 
@@ -367,6 +381,7 @@ function generateJSON() {
     const items = document.querySelectorAll('.item');
     
     for(i = 0; i < items.length; i++) {
+        //New index in order to generate JSON with the new order of elements reflacted
         let newIndex = items[i].getAttribute('id');
 
         const column = Math.floor(newIndex % numberOfColumns);
@@ -433,7 +448,9 @@ function parseJSONString(jsonString, column, row) {
 */
 
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
-    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + '">';//TODO add onlick to stop propagation to parent div when selecting item
+    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
+    '" onmousedown="return handleListEvent(event)"' + 
+    '>';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
         html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>'
@@ -488,6 +505,23 @@ function copyTextToClipboard() {
 /*
 ****************************************************** Helpers ******************************************************
 */
+
+function handleListEvent(event) {
+    const target = event.target;
+    const targetType = target.constructor.name;
+
+    console.log('event: ' + event.type);
+    console.log('targetType: ' + targetType);
+
+    if (targetType === 'HTMLSelectElement') {
+      selectClicked = true;
+
+    } else {
+      selectClicked = false;
+    }
+
+    console.log('Clicked!: ' + targetType);
+}
 
 function checkBowserSupportsFilesAPI() {
     // Check for the various File API support.
