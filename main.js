@@ -60,6 +60,7 @@ const gridElement = document.querySelector('.grid');
 const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
+const addButton = document.getElementById('addButton');
 
 const itemWidth = 250;
 const itemHeight = 250;
@@ -139,6 +140,7 @@ function setup() {
     deleteSelectedButton.addEventListener('click', removeSelectedItems);
     jsonButton.addEventListener('click', generateJSON);
     document.addEventListener('click', toggleSelectElement);
+    addButton.addEventListener('click', addCell);
 
     hideElement("saveSection");
 
@@ -179,6 +181,11 @@ function createGridItems() {
     }
     
      grid.refreshItems().layout();
+}
+
+function addCell() {
+    const id = grid.getItems().length;
+    addItem(id);
 }
 
 // Add a grid item to DOM
