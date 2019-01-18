@@ -14,6 +14,7 @@
     <h1 class="text">WTDashboardJSONGenerator</h1>
     <h3 class="text">Instructions:</h3>
     <ul>
+        <p class="text">Upload a JSON file to generate a completed grid, or create a grid from scratch.</p>
         <p class="text">Enter column and row information to generate grid.</p>
         <p class="text">Drag and drop to reorder.</p>
         <p class="text">Select elements and click "Merge" button to create larger elements.</p>
@@ -21,6 +22,10 @@
     </ul>
 </header>
 <body>
+
+    <div class = "grouping" id = "uploadSection">
+        <input type="file" id="input" onchange="handleFiles(this.files)">
+    </div>
 
     <div class = "grouping" id = "titleSection">
         <input id="titleInput" type="text">
@@ -31,19 +36,29 @@
         <input id="columnInput" type="text">
         <input id="rowInput" type="text">
         <button id="createButton">Create</button>
+        <button id="addButton">Add Cell</button>
         <button id="deleteButton">Delete All</button>
         <button id="deleteSelectedButton">Delete Selected</button>
+        <button id="combineSelectedButton">Combine Selected</button>
     </div>
 
     <div class="grid"></div>
 
     <div class = "grouping" id = "mainActionSection">
         <button id="jsonButton">Generate JSON</button>
+        <p id="jsonGenerationMessage"></p>
     </div>
 
     <div class = "grouping" id = "jsonSection">
         <pre class="text" id="json"></pre>
     </div>
+
+
+    <div class = "grouping" id = "saveSection">
+        <!-- The button used to copy the text -->
+        <button onclick="copyTextToClipboard()">Copy text</button>
+    </div>
+
 
     <script src="https://unpkg.com/web-animations-js@2.3.1/web-animations.min.js"></script>
     <script src="https://unpkg.com/hammerjs@2.0.8/hammer.min.js"></script>
