@@ -254,6 +254,7 @@ function addItem(id, itemType = 'item') {
     configElement.placeholder = "config name";
 
     grid.refreshItems().layout();
+    ++uuid;
 }
 
 // Remove all items in the grid
@@ -316,9 +317,9 @@ function createGridFromJSON(jsonObject) {
     columnInput.value = numberOfColumns;
     rowInput.value = numberOfRows;
 
-    createGridItems();
+    removeItems();
 
-    for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
+    for (count = 0; count < jsonObject.widgets.length; count++) {
         const widget = jsonObject.widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
@@ -327,6 +328,9 @@ function createGridFromJSON(jsonObject) {
         const widgetJob = widget.job;
         const widgetWidget = widget.widget;
         const widgetConfig = widget.config;
+
+        const newCellType = getItemTypeForDimensions(widgetWidget, widgetHeight)
+        addItem(count, newCellType);
 
         let selectedJob = getSelectListElement(jobsListName, count);
         let selectedWidget = getSelectListElement(widgetsListName, count);
@@ -339,6 +343,8 @@ function createGridFromJSON(jsonObject) {
             configElement.value = widgetConfig;
         }
     }
+
+    grid.refreshItems().layout();
 }
 
 function handleFiles(filesList) {
@@ -381,6 +387,9 @@ function generateJSON() {
         let selectedJob = getSelectedListElementValue(jobsListName, newIndex);
         let selectedWidget = getSelectedListElementValue(widgetsListName, newIndex);
 
+        console.log('selected JOB: ' + selectedJob);
+        console.log('selected WIDGET: ' + selectedWidget);
+
         if (selectedJob === jobsPlaceholderMessage) {
             selectedJob = '';
         }
@@ -401,8 +410,7 @@ function generateJSON() {
 
         //TODO: once blocks can merge need to update this to represent how wide or tall the 'final' block is
         const item = grid.getItems()[i];
-        console.log('item: ' + item);
-        console.log('item height: ' + item.getHeight());
+        
         const blockWidth = Math.floor(item.getWidth() / itemWidth);
         const blockHeight = Math.floor(item.getHeight() / itemHeight);
 
@@ -500,6 +508,16 @@ function copyTextToClipboard() {
 /*
 ****************************************************** Helpers ******************************************************
 */
+
+function getItemTypeForDimensions(width, height) {
+    let cellType = "item";
+    if (width > 1) {
+        cellType = "itemWide";
+    } else if (height > 1) {
+        cellType = "itemTall";
+    }
+    return cellType;
+}
 
 function handleListEvent(event) {
     const target = event.target;
