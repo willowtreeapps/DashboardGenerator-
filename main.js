@@ -47,6 +47,7 @@ class Widget {
 }
 
 let selectedElements = [];
+let uuid = 0;
 
 const titleInput = document.getElementById("titleInput");
 const titleVisibleToggle = document.getElementById("titleVisibleToggle");
@@ -61,9 +62,12 @@ const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
+const combineSelectedButton = document.getElementById('combineSelectedButton');
 
 const itemWidth = 250;
 const itemHeight = 250;
+
+const itemTypesQueryString = '.item, .itemTall, itemWide';
 
 const widgetsAndJobsList = 
 [
@@ -103,26 +107,29 @@ const widgetsAndJobsList =
 'zone-clock'
 ]
 
-const jobsListName = 'jobs'
-const widgetsListName = 'widgets'
+const jobsListName = 'jobs';
+const widgetsListName = 'widgets';
 
 const jobsPlaceholderMessage = 'Select a Job';
-const widgetsPlaceholderMessage = 'Select a Widget'
+const widgetsPlaceholderMessage = 'Select a Widget';
 
 let selectClicked = false;//prevent grid items from dragging when select list is clicked
 
 // Create a grid using the Muuri framework that allows drag and drop
-const grid = new Muuri('.grid', {
+const grid = new Muuri('.grid',
+{
     dragEnabled: true,
     layoutOnResize: true,
-    layout: createLayout,
+    layoutDuration: 400,
+    layoutEasing: 'ease',
+    dragContainer: document.body,
+    dragSort: function () {
+        return [grid];
+    },
     dragStartPredicate: function (item, e) {
-        // Start moving the item after the item has been dragged for one second.
-
         if (e.isFinal) {
             return Muuri.ItemDrag.defaultStartPredicate(item, e);
         }
-        // console.log('Drag Start Predicate');
         return !selectClicked;
       }
 });
@@ -141,6 +148,7 @@ function setup() {
     jsonButton.addEventListener('click', generateJSON);
     document.addEventListener('click', toggleSelectElement);
     addButton.addEventListener('click', addCell);
+    combineSelectedButton.addEventListener('click', combineSelected);
 
     hideElement("saveSection");
 
@@ -150,6 +158,7 @@ function setup() {
 /*
 ****************************************************** Action Methods ******************************************************
 */
+
 
 // Toggle to change title visibility
 // TODO: Make a custom button with a state? 
@@ -180,28 +189,52 @@ function createGridItems() {
         addItem(count);
     }
     
-     grid.refreshItems().layout();
+    grid.refreshItems().layout();
+}
+
+function combineSelected() {
+    if(selectedElements.length != 2) {
+        return;
+    }
+    const itemOne = selectedElements[0];
+    const itemTwo =  selectedElements[1];
+
+    //TODO: need to get item column / rows and width / height to better create new cell orientation and size
+    const itemOneOffset = itemOne.id;
+    const itemTwoOffset = itemTwo.id;
+    const positionDifference  = Math.abs(itemOneOffset - itemTwoOffset);
+
+    let newCellOrientation = "itemTall";
+    if (positionDifference < 2) {
+        newCellOrientation = "itemWide";
+    }
+
+    removeSelectedItems();
+
+    const newID = ++uuid;
+    addItem(newID, newCellOrientation);
 }
 
 function addCell() {
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
 
-    const id = grid.getItems().length;
-    if (id >= (numberOfRows * numberOfColumns)) {
+    const totalCellsNum = grid.getItems().length;
+    if (totalCellsNum >= (numberOfRows * numberOfColumns)) {
         //Only allow user to add up to the max amount of cells.
         return;
     }
-    addItem(id);
+    const newID = ++uuid;
+    addItem(newID);
 }
 
 // Add a grid item to DOM
-function addItem(id) {
+function addItem(id, itemType = 'item') {
     let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="item" id="' + id +
+        '<div class="' + itemType + '" id="' + id +
          '">' + 
             '<div class="item-content-default"' +
             '" onmousedown="return handleListEvent(event)"' + 
@@ -220,11 +253,12 @@ function addItem(id) {
     const configElement = document.getElementById(itemConfigTextName(id));
     configElement.placeholder = "config name";
 
+    grid.refreshItems().layout();
 }
 
 // Remove all items in the grid
 function removeItems() {
-    const items = document.querySelectorAll('.item');
+    const items = document.querySelectorAll(itemTypesQueryString);
     grid.remove(items);
     items.forEach(item => {
         gridElement.removeChild(item);
@@ -235,7 +269,7 @@ function removeItems() {
    TODO: selectedElements is a global variable. Can we make this safer?
 */
 function removeSelectedItems() {
-    grid.remove(selectedElements);
+    grid.remove(selectedElements, {layout: false});
     selectedElements.forEach(element => {
         gridElement.removeChild(element);
     })
@@ -244,7 +278,7 @@ function removeSelectedItems() {
 
 // Add selected item to array and show that it is selected
 function toggleSelectElement(event) {
-    const items = document.querySelectorAll('.item');
+    const items = document.querySelectorAll(itemTypesQueryString);
 
     items.forEach(element => {
         if (event.target === element.firstChild) {
@@ -261,58 +295,6 @@ function toggleSelectElement(event) {
         }
     })
 }
-
-/*
-****************************************************** Layout ******************************************************
-*/
-
-function createLayout(items, gridWidth, gridHeight) {
-    // The layout data object. Muuri will read this data and position the items
-    // based on it.
-    const layout = {
-      // The layout item slots (left/top coordinates).
-      slots: [],
-      // The layout's total width.
-      width: itemWidth,
-      // The layout's total height.
-      height: itemHeight,
-      // Should Muuri set the grid's width after layout?
-      setWidth: true,
-      // Should Muuri set the grid's height after layout?
-      setHeight: true
-    };
-
-    // Calculate the slots.
-    
-    const numberOfColumns = columnInput.value;
-    const numberOfRows = rowInput.value;
-    const margin = 5;
-
-    let x = margin;
-    let y = 0;
-
-    const width = itemWidth;
-    const height = itemHeight;
-
-    for (let row = 0; row < numberOfRows; row++) {
-        for (let column = 0; column < numberOfColumns; column++) {
-            if(column == 0  && row > 0) {
-                x = margin
-                y += height + margin;
-              } else if (column > 0) {
-                x += width + margin;
-              }
-        
-            layout.slots.push(x, y);
-        }
-    }
-
-    // Calculate the layout's total width and height. 
-    layout.width = width * numberOfColumns;
-    layout.height = height * numberOfRows;
-
-    return layout;
-  }
 
    /*
 ****************************************************** Populating From Uploaded JSON ******************************************************
@@ -334,7 +316,7 @@ function createGridFromJSON(jsonObject) {
     columnInput.value = numberOfColumns;
     rowInput.value = numberOfRows;
 
-    createGridItems()
+    createGridItems();
 
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
         const widget = jsonObject.widgets[count];
@@ -352,12 +334,8 @@ function createGridFromJSON(jsonObject) {
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
-        console.log('selected Job: ' + selectedJob);
-        console.log('Widget JOB: ' + widgetJob);
-
         if (widgetConfig && widgetConfig.length > 2) {
             const configElement = document.getElementById(itemConfigTextName(count));
-            console.log(configElement);
             configElement.value = widgetConfig;
         }
     }
@@ -392,7 +370,7 @@ function generateJSON() {
     
     const widgets = [];
     const configurations = [];
-    const items = document.querySelectorAll('.item');
+    const items = document.querySelectorAll(itemTypesQueryString);
     
     for(i = 0; i < items.length; i++) {
         //New index in order to generate JSON with the new order of elements reflacted
@@ -524,17 +502,15 @@ function handleListEvent(event) {
     const target = event.target;
     const targetType = target.constructor.name;
 
-    console.log('event: ' + event.type);
-    console.log('targetType: ' + targetType);
+    // console.log('event: ' + event.type);
+    // console.log('targetType: ' + targetType);
+    // console.log('Clicked!: ' + targetType);
 
-    if (targetType === 'HTMLSelectElement') {
+    if(targetType === 'HTMLSelectElement') {
       selectClicked = true;
-
     } else {
       selectClicked = false;
     }
-
-    console.log('Clicked!: ' + targetType);
 }
 
 function checkBowserSupportsFilesAPI() {
@@ -606,12 +582,3 @@ function itemSelectListName(baseListName, itemID) {
 function itemConfigTextName(itemID) {
     return 'config_' + itemID;
 }
-
-// // Prints height and witdth of items in pixels
-// // TODO: Do math to get column and row size of grid
-// function getItemSizes() {
-//     const items = document.querySelectorAll('.item');
-//     items.forEach(function (item, index) {
-//         console.log("Index " + index + ": " + "(" + item.clientWidth + ", " + item.clientHeight +  ")");
-//     })
-// }
