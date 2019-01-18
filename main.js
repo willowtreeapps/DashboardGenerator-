@@ -395,7 +395,7 @@ function generateJSON() {
         }
         let configJSONMessage = parseJSONString(configJSONString, column, row);
         
-        if (!isJSONEmpty(configJSONMessage)) {
+        if (!isJSONEmpty(configJSONMessage) && configurations.indexOf(configJSONMessage) < 0) {
             configurations.push(configJSONMessage);
         }
 
