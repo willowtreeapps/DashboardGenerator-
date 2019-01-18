@@ -1,4 +1,9 @@
-// Container for data to be included in JSON file for config
+
+/*******************************************************************************************************************************************************************
+****************************************************** Models *******************************************************************************
+*******************************************************************************************************************************************************************/
+
+
 class GridData {
     constructor(title, titleVisible, layout, widgets, config) {
         this.title = title;
@@ -46,6 +51,10 @@ class Widget {
     }
 }
 
+/*******************************************************************************************************************************************************************
+****************************************************** Global Variables *******************************************************************************
+*******************************************************************************************************************************************************************/
+
 let selectedElements = [];
 let uuid = 0;
 
@@ -54,10 +63,10 @@ const titleVisibleToggle = document.getElementById("titleVisibleToggle");
 
 const columnInput = document.getElementById("columnInput");
 const rowInput = document.getElementById("rowInput");
-const createButton = document.getElementById("createButton");
 
 const gridElement = document.querySelector('.grid');
 
+const createButton = document.getElementById("createButton");
 const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
@@ -69,51 +78,14 @@ const itemHeight = 250;
 
 const itemTypesQueryString = '.item, .itemTall, .itemWide';
 
-const widgetsAndJobsList = 
-[
-'appbot-topics',
-'appbot-wordcloud',
-'apteligent-crashtrend',
-'blackduck-stats',
-'board-cycle',
-'bugsnag-error-occurances',
-'bugsnag-error-trend',
-'build-status',
-'burndown',
-'checkmarx-scan-queue',
-'checkmarx-top-risks',
-'checkmarx-top-scantime',
-'checkmarx_stats',
-'environment-commit-status',
-'google-drive',
-'isitup',
-'onelogin-locked-accounts',
-'pending-pr-count',
-'picture-of-the-day',
-'security-monkey',
-'sentinel-one-inactive',
-'sentinel-one-threats',
-'sentinel-one',
-'sprint-goals',
-'sprinthealth-history',
-'teamcity-build-queue',
-'teamcity-build-status',
-'teamcity-test-trend',
-'test-results',
-'testrail_run-count',
-'testrail_run-results',
-'tracker-burnup',
-'warcraft-profile',
-'zone-clock'
-]
-
 const jobsListName = 'jobs';
 const widgetsListName = 'widgets';
 
 const jobsPlaceholderMessage = 'Select a Job';
 const widgetsPlaceholderMessage = 'Select a Widget';
 
-let selectClicked = false;//prevent grid items from dragging when select list is clicked
+//prevent grid items from dragging when select list is clicked
+let selectClicked = false;
 
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid',
@@ -162,13 +134,13 @@ function setup() {
     checkBowserSupportsFilesAPI();
 }
 
-/*
-****************************************************** Action Methods ******************************************************
-*/
+/*******************************************************************************************************************************************************************
+****************************************************** Action Methods *******************************************************************************
+*******************************************************************************************************************************************************************/
+
 
 
 // Toggle to change title visibility
-// TODO: Make a custom button with a state? 
 function toggleTitleVisibility() {
     if (titleVisibleToggle.textContent === "Set Visible") {
         setTitleInvisible();
@@ -199,6 +171,8 @@ function createGridItems() {
     grid.refreshItems().layout();
 }
 
+//combine 2 items to create an extra long or extra wide cell
+//TODO: need to get cell positions to dynamically allow the creation of cells that are 3 units wide or 3 units tall
 function combineSelected() {
     if(selectedElements.length != 2) {
         return;
@@ -206,7 +180,6 @@ function combineSelected() {
     const itemOne = selectedElements[0];
     const itemTwo =  selectedElements[1];
 
-    //TODO: need to get item column / rows and width / height to better create new cell orientation and size
     const itemOneOffset = itemOne.id;
     const itemTwoOffset = itemTwo.id;
     const positionDifference  = Math.abs(itemOneOffset - itemTwoOffset);
@@ -222,6 +195,7 @@ function combineSelected() {
     addItem(newID, newCellOrientation);
 }
 
+// Add a 1x1 cell to the grid if the maximum number of items has not been reached
 function addCell() {
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
@@ -235,7 +209,7 @@ function addCell() {
     addItem(newID);
 }
 
-// Add a grid item to DOM
+// Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
 function addItem(id, itemType = 'item') {
     let jobsDropDownHtml = createDropDownHTML(jobsListName, widgetsAndJobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsAndJobsList, id, widgetsPlaceholderMessage);
@@ -273,9 +247,7 @@ function removeItems() {
     })
 }
 
-/* Remove all items within the selectedElements array. 
-   TODO: selectedElements is a global variable. Can we make this safer?
-*/
+//Remove all items within the selectedElements array. 
 function removeSelectedItems() {
     grid.remove(selectedElements, {layout: false});
     selectedElements.forEach(element => {
@@ -304,10 +276,12 @@ function toggleSelectElement(event) {
     })
 }
 
-   /*
-****************************************************** Populating From Uploaded JSON ******************************************************
-*/
 
+/*******************************************************************************************************************************************************************
+****************************************************** Populating From Uploaded JSON *******************************************************************************
+*******************************************************************************************************************************************************************/
+
+//Creates a grid from an already-complete json generated from the Dashboard
 function createGridFromJSON(jsonObject) {
     const title = jsonObject.title;
     const titleVisible = jsonObject.titleVisible;
@@ -354,6 +328,7 @@ function createGridFromJSON(jsonObject) {
     grid.refreshItems().layout();
 }
 
+//Listener that handles processing the json file the user selects to upload and generate the grid from
 function handleFiles(filesList) {
     const file = filesList[0];
     fr = new FileReader();
@@ -365,9 +340,10 @@ function handleFiles(filesList) {
     fr.readAsText(file);
 }
 
-  /*
-****************************************************** JSON Generation ******************************************************
-*/
+/*******************************************************************************************************************************************************************
+****************************************************** JSON Generation *******************************************************************************
+*******************************************************************************************************************************************************************/
+
 
 // Build the GridData object and convert it to a JSON string
 function generateJSON() {
@@ -402,7 +378,6 @@ function generateJSON() {
         }
 
         let configJSONString = getItemConfigText(newIndex);
-        let configJSONName;
         if (configJSONString.indexOf('{') != 0) {
             configJSONString = '{' + configJSONString + '}';
         }
@@ -412,7 +387,6 @@ function generateJSON() {
             configurations.push(configJSONMessage);
         }
 
-        //TODO: once blocks can merge need to update this to represent how wide or tall the 'final' block is
         const item = grid.getItems()[i];
         
         const blockWidth = Math.floor(item.getWidth() / itemWidth);
@@ -429,6 +403,8 @@ function generateJSON() {
     showElement("saveSection");
 }
 
+//Parses the user-input JSON string per item on the grid, and returns the JSON Object
+//generates a message on the page letting the user know if there are any parsing errors while doing this.
 function parseJSONString(jsonString, column, row) {
     let configJSON;
     let message;
@@ -450,10 +426,12 @@ function parseJSONString(jsonString, column, row) {
       return configJSON;
 }
 
-/*
-****************************************************** HTML Generation ******************************************************
-*/
+/*******************************************************************************************************************************************************************
+****************************************************** HTML Generation *******************************************************************************
+*******************************************************************************************************************************************************************/
 
+
+//Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
     '" onmousedown="return handleListEvent(event)"' + 
@@ -469,6 +447,7 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
     return html;
 }
 
+//Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
     let html = '<input id="' + textFieldName + '" type="text">' + 
@@ -487,10 +466,12 @@ function createDOMFragment(htmlStr) {
     return frag;
 }
 
-/*
-****************************************************** Save Generated JSON ******************************************************
-*/
+/*******************************************************************************************************************************************************************
+****************************************************** Save Generated JSON *******************************************************************************
+*******************************************************************************************************************************************************************/
 
+//Copies the generated JSON displayed on the page to the clipboard so the user can then paste it into their file to use.
+//TODO: This would be better if the button could just download a .json file with the generated JSON.
 function copyTextToClipboard() {
     const text = document.getElementById('json').innerHTML;
     const textArea = document.createElement("textarea");
@@ -510,10 +491,13 @@ function copyTextToClipboard() {
     document.body.removeChild(textArea);
   }
 
-/*
-****************************************************** Helpers ******************************************************
-*/
+/*******************************************************************************************************************************************************************
+****************************************************** Helpers *******************************************************************************
+*******************************************************************************************************************************************************************/
 
+//Helper method that decides the cell type based on the item's width or height
+//TODO: need to create 3x3 items dynamically which is currently not covered.
+//Currently the grid only makes 1x1, 2x1, and 1x2 grid items.
 function getItemTypeForDimensions(width, height) {
     let cellType = "item";
     if (width > 1) {
@@ -524,10 +508,13 @@ function getItemTypeForDimensions(width, height) {
     return cellType;
 }
 
+//Listener that handles the mousedown event on each grid item to be able to set the selectClicked bool
+//selectClicked is used to prevent the grid item from scrolling when the user goes to select a new list value
 function handleListEvent(event) {
     const target = event.target;
     const targetType = target.constructor.name;
 
+    //Debugging prints
     // console.log('event: ' + event.type);
     // console.log('targetType: ' + targetType);
     // console.log('Clicked!: ' + targetType);
@@ -539,6 +526,7 @@ function handleListEvent(event) {
     }
 }
 
+//Listener that handles when the use selects a new job or widget, and pre-fills the config textfield with a template based on the item selected
 function handleListChangeEvent(selectElement, id) {
     const selectedValue = selectElement.options[selectElement.selectedIndex].value;
     const configTemplate = getTemplateForOption(selectedValue);
@@ -547,6 +535,7 @@ function handleListChangeEvent(selectElement, id) {
     configElement.value = configTemplate;
 }
 
+//Helper that checks that the browser supports the File API code used to upload the JSON file
 function checkBowserSupportsFilesAPI() {
     // Check for the various File API support.
     if (window.File && window.FileReader && window.FileList && window.Blob) {
@@ -570,28 +559,33 @@ function isTitleVisible() {
     return titleVisibleToggle.textContent === "Set Hidden"
 }
 
+//Makes an element visible
 function showElement(elementIDString) {
     const element = document.getElementById(elementIDString);
     element.style.visibility = "visible";
 }
 
+//Makes an element invisible
 function hideElement(elementIDString) {
     const element = document.getElementById(elementIDString);
     element.style.visibility = "hidden";
 }
 
+//Gets the selected value of a select HTML list
 function getSelectedListElementValue(listName, itemID) {
     const listElement = getSelectListElement(listName, itemID);
     const selectedValue = listElement.options[listElement.selectedIndex].text;
     return selectedValue;
 }
 
+//Gets the select HTML list element itself
 function getSelectListElement(listName, itemID) {
     const itemSelectedListName = itemSelectListName(listName, itemID);
     const listElement = document.getElementById(itemSelectedListName);
     return listElement;
 }
 
+//Gets the config text from the config HTML textfield box inside a grid item
 function getItemConfigText(itemID) {
     const configTextFieldName = itemConfigTextName(itemID);
     const textFieldElement = document.getElementById(configTextFieldName);
@@ -608,19 +602,22 @@ function isJSONEmpty(obj) {
     return true;
 }
 
+//Helper to determine what the name of a select HTML list element is for a given grid item id
 function itemSelectListName(baseListName, itemID) {
     const name = baseListName + '_' + itemID;
     return name.trim();
 }
 
+//Helper to determine what the name of a config HTML textbox is for a given grid item id
 function itemConfigTextName(itemID) {
     return 'config_' + itemID;
 }
 
-/*
-****************************************************** Config Templates ******************************************************
-*/
+/*******************************************************************************************************************************************************************
+****************************************************** Config Templates *******************************************************************************
+*******************************************************************************************************************************************************************/
 
+//Helper that returns the config template decided below for a selected value in the jobs or widgets select list.
 function getTemplateForOption(selectedValue) {
     const configTemplate = configTemplatesDict[selectedValue];
     if (!configTemplate) {
@@ -630,38 +627,84 @@ function getTemplateForOption(selectedValue) {
 }
 
 const configTemplatesDict = {
-        'appbot-topics' : 'enter config template',
-        'appbot-wordcloud' : '',
-        'apteligent-crashtrend' : '',
-        'blackduck-stats' : '',
-        'board-cycle' : '',
-        'bugsnag-error-occurances' : '',
-        'bugsnag-error-trend' : '',
-        'build-status' : '',
-        'burndown' : '',
-        'checkmarx-scan-queue' : '',
-        'checkmarx-top-risks' : '',
-        'checkmarx-top-scantime' : '',
-        'checkmarx_stats' : '',
-        'environment-commit-status' : '',
-        'google-drive' : '',
-        'isitup' : '',
-        'onelogin-locked-accounts' : '',
-        'pending-pr-count' : '',
-        'picture-of-the-day' : '',
-        'security-monkey' : '',
-        'sentinel-one-inactive' : '',
-        'sentinel-one-threats' : '',
-        'sentinel-one' : '',
-        'sprint-goals' : '',
-        'sprinthealth-history' : '',
-        'teamcity-build-queue' : '',
-        'teamcity-build-status' : '',
-        'teamcity-test-trend' : '',
-        'test-results' : '',
-        'testrail_run-count' : '',
-        'testrail_run-results' : '',
-        'tracker-burnup' : '',
-        'warcraft-profile' : '',
-        'zone-clock' : ''
+    'appbot-topics' : 'enter config template',
+    'appbot-wordcloud' : '',
+    'apteligent-crashtrend' : '',
+    'blackduck-stats' : '',
+    'board-cycle' : '',
+    'bugsnag-error-occurances' : '',
+    'bugsnag-error-trend' : '',
+    'build-status' : '',
+    'burndown' : '',
+    'checkmarx-scan-queue' : '',
+    'checkmarx-top-risks' : '',
+    'checkmarx-top-scantime' : '',
+    'checkmarx_stats' : '',
+    'environment-commit-status' : '',
+    'google-drive' : '',
+    'isitup' : '',
+    'onelogin-locked-accounts' : '',
+    'pending-pr-count' : '',
+    'picture-of-the-day' : '',
+    'security-monkey' : '',
+    'sentinel-one-inactive' : '',
+    'sentinel-one-threats' : '',
+    'sentinel-one' : '',
+    'sprint-goals' : '',
+    'sprinthealth-history' : '',
+    'teamcity-build-queue' : '',
+    'teamcity-build-status' : '',
+    'teamcity-test-trend' : '',
+    'test-results' : '',
+    'testrail_run-count' : '',
+    'testrail_run-results' : '',
+    'tracker-burnup' : '',
+    'warcraft-profile' : '',
+    'zone-clock' : ''
 }
+
+
+/*******************************************************************************************************************************************************************
+****************************************************** Widgets And Jobs List Templates *******************************************************************************
+*******************************************************************************************************************************************************************/
+
+
+const widgetsAndJobsList = 
+[
+'appbot-topics',
+'appbot-wordcloud',
+'apteligent-crashtrend',
+'blackduck-stats',
+'board-cycle',
+'bugsnag-error-occurances',
+'bugsnag-error-trend',
+'build-status',
+'burndown',
+'checkmarx-scan-queue',
+'checkmarx-top-risks',
+'checkmarx-top-scantime',
+'checkmarx_stats',
+'environment-commit-status',
+'google-drive',
+'isitup',
+'onelogin-locked-accounts',
+'pending-pr-count',
+'picture-of-the-day',
+'security-monkey',
+'sentinel-one-inactive',
+'sentinel-one-threats',
+'sentinel-one',
+'sprint-goals',
+'sprinthealth-history',
+'teamcity-build-queue',
+'teamcity-build-status',
+'teamcity-test-trend',
+'test-results',
+'testrail_run-count',
+'testrail_run-results',
+'tracker-burnup',
+'warcraft-profile',
+'zone-clock'
+]
+
+
