@@ -35,13 +35,13 @@ class GridSize {
 }
 
 class Widget {
-    constructor(col, row, width, height, widget, job, config) {
+    constructor(col, row, width, height, job, widget, config) {
         this.col = col;
         this.row = row;
         this.width = width;
         this.height = height;
-        this.widget = widget;
         this.job = job;
+        this.widget = widget;
         this.config = config;
     }
 }
@@ -230,8 +230,8 @@ function addCell() {
 
 // Add a grid item to DOM
 function addItem(id, itemType = 'item') {
-    let jobsDropDownHtml = createDropDownHTML('jobs', widgetsAndJobsList, id, jobsPlaceholderMessage);
-    let widgetsDropDownList = createDropDownHTML('widgets', widgetsAndJobsList, id, widgetsPlaceholderMessage);
+    let jobsDropDownHtml = createDropDownHTML(jobsListName, widgetsAndJobsList, id, jobsPlaceholderMessage);
+    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
         '<div class="' + itemType + '" id="' + id +
