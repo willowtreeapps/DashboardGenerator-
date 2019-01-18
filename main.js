@@ -400,8 +400,11 @@ function generateJSON() {
         }
 
         //TODO: once blocks can merge need to update this to represent how wide or tall the 'final' block is
-        const blockWidth = 1;
-        const blockHeight = 1;
+        const item = grid.getItems()[i];
+        console.log('item: ' + item);
+        console.log('item height: ' + item.getHeight());
+        const blockWidth = Math.floor(item.getWidth() / itemWidth);
+        const blockHeight = Math.floor(item.getHeight() / itemHeight);
 
         const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONString);
         widgets.push(widgetObject);
