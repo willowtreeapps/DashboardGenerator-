@@ -67,7 +67,7 @@ const combineSelectedButton = document.getElementById('combineSelectedButton');
 const itemWidth = 250;
 const itemHeight = 250;
 
-const itemTypesQueryString = '.item, .itemTall, itemWide';
+const itemTypesQueryString = '.item, .itemTall, .itemWide';
 
 const widgetsAndJobsList = 
 [
@@ -123,6 +123,13 @@ const grid = new Muuri('.grid',
     layoutDuration: 400,
     layoutEasing: 'ease',
     dragContainer: document.body,
+    layout: {
+        fillGaps: true,
+        horizontal: false,
+        alignRight: false,
+        alignBottom: false,
+        rounding: true
+    },
     dragSort: function () {
         return [grid];
     },
@@ -329,7 +336,7 @@ function createGridFromJSON(jsonObject) {
         const widgetWidget = widget.widget;
         const widgetConfig = widget.config;
 
-        const newCellType = getItemTypeForDimensions(widgetWidget, widgetHeight)
+        const newCellType = getItemTypeForDimensions(widgetWidth, widgetHeight)
         addItem(count, newCellType);
 
         let selectedJob = getSelectListElement(jobsListName, count);
@@ -387,9 +394,6 @@ function generateJSON() {
         let selectedJob = getSelectedListElementValue(jobsListName, newIndex);
         let selectedWidget = getSelectedListElementValue(widgetsListName, newIndex);
 
-        console.log('selected JOB: ' + selectedJob);
-        console.log('selected WIDGET: ' + selectedWidget);
-
         if (selectedJob === jobsPlaceholderMessage) {
             selectedJob = '';
         }
@@ -404,7 +408,7 @@ function generateJSON() {
         }
         let configJSONMessage = parseJSONString(configJSONString, column, row);
         
-        if (!isJSONEmpty(configJSONMessage) && configurations.indexOf(configJSONMessage) < 0) {
+        if (!isJSONEmpty(configJSONMessage)) {
             configurations.push(configJSONMessage);
         }
 
