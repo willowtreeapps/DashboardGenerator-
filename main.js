@@ -531,7 +531,7 @@ function handleListEvent(event) {
     // console.log('targetType: ' + targetType);
     // console.log('Clicked!: ' + targetType);
 
-    if(targetType === 'HTMLSelectElement') {
+    if(targetType === 'HTMLSelectElement' || targetType === 'HTMLInputElement') {
       selectClicked = true;
     } else {
       selectClicked = false;
