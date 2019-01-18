@@ -457,6 +457,7 @@ function parseJSONString(jsonString, column, row) {
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
     '" onmousedown="return handleListEvent(event)"' + 
+    '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
     '>';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
@@ -538,6 +539,14 @@ function handleListEvent(event) {
     }
 }
 
+function handleListChangeEvent(selectElement, id) {
+    const selectedValue = selectElement.options[selectElement.selectedIndex].value;
+    const configTemplate = getTemplateForOption(selectedValue);
+    
+    const configElement = document.getElementById(itemConfigTextName(id));
+    configElement.value = configTemplate;
+}
+
 function checkBowserSupportsFilesAPI() {
     // Check for the various File API support.
     if (window.File && window.FileReader && window.FileList && window.Blob) {
@@ -606,4 +615,53 @@ function itemSelectListName(baseListName, itemID) {
 
 function itemConfigTextName(itemID) {
     return 'config_' + itemID;
+}
+
+/*
+****************************************************** Config Templates ******************************************************
+*/
+
+function getTemplateForOption(selectedValue) {
+    const configTemplate = configTemplatesDict[selectedValue];
+    if (!configTemplate) {
+        return '';
+    }
+    return configTemplate;
+}
+
+const configTemplatesDict = {
+        'appbot-topics' : 'enter config template',
+        'appbot-wordcloud' : '',
+        'apteligent-crashtrend' : '',
+        'blackduck-stats' : '',
+        'board-cycle' : '',
+        'bugsnag-error-occurances' : '',
+        'bugsnag-error-trend' : '',
+        'build-status' : '',
+        'burndown' : '',
+        'checkmarx-scan-queue' : '',
+        'checkmarx-top-risks' : '',
+        'checkmarx-top-scantime' : '',
+        'checkmarx_stats' : '',
+        'environment-commit-status' : '',
+        'google-drive' : '',
+        'isitup' : '',
+        'onelogin-locked-accounts' : '',
+        'pending-pr-count' : '',
+        'picture-of-the-day' : '',
+        'security-monkey' : '',
+        'sentinel-one-inactive' : '',
+        'sentinel-one-threats' : '',
+        'sentinel-one' : '',
+        'sprint-goals' : '',
+        'sprinthealth-history' : '',
+        'teamcity-build-queue' : '',
+        'teamcity-build-status' : '',
+        'teamcity-test-trend' : '',
+        'test-results' : '',
+        'testrail_run-count' : '',
+        'testrail_run-results' : '',
+        'tracker-burnup' : '',
+        'warcraft-profile' : '',
+        'zone-clock' : ''
 }
