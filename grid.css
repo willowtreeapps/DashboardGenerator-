@@ -9,7 +9,7 @@
   position: absolute;
   width: 250px;
   height: 250px;
-  margin: 5px;
+  margin: 2px;
   z-index: 1;
 }
 
@@ -18,7 +18,7 @@
   position: absolute;
   width: 250px;
   height: 500px;
-  margin: 5px;
+  margin: 2px;
   z-index: 1;
 }
 
@@ -27,7 +27,25 @@
   position: absolute;
   width: 500px;
   height: 250px;
-  margin: 5px;
+  margin: 2px;
+  z-index: 1;
+}
+
+.itemVeryTall {
+  display: block;
+  position: absolute;
+  width: 250px;
+  height: 750px;
+  margin: 2px;
+  z-index: 1;
+}
+
+.itemVeryWide {
+  display: block;
+  position: absolute;
+  width: 750px;
+  height: 250px;
+  margin: 2px;
   z-index: 1;
 }
 

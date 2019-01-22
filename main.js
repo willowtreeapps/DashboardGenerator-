@@ -15,7 +15,8 @@ class GridData {
 }
 
 class ItemData {
-    constructor(col, row, width, height, widget, job, config) {
+    constructor(id, col, row, width, height, widget, job, config) {
+        this.id = id;
         this.col = col;
         this.row = row;
         this.width = width;
@@ -76,7 +77,7 @@ const combineSelectedButton = document.getElementById('combineSelectedButton');
 const itemWidth = 250;
 const itemHeight = 250;
 
-const itemTypesQueryString = '.item, .itemTall, .itemWide';
+const itemTypesQueryString = '.item, .itemTall, .itemWide, .itemVeryWide, .itemVeryTall';
 
 const jobsListName = 'jobs';
 const widgetsListName = 'widgets';
@@ -177,22 +178,109 @@ function combineSelected() {
     if(selectedElements.length != 2) {
         return;
     }
-    const itemOne = selectedElements[0];
-    const itemTwo =  selectedElements[1];
+    const items = grid.getItems(selectedElements);
+    const itemOne = items[0];
+    const itemTwo =  items[1];
 
-    const itemOneOffset = itemOne.id;
-    const itemTwoOffset = itemTwo.id;
-    const positionDifference  = Math.abs(itemOneOffset - itemTwoOffset);
-
-    let newCellOrientation = "itemTall";
-    if (positionDifference < 2) {
-        newCellOrientation = "itemWide";
+    if (!areAdjacent(itemOne, itemTwo)) {
+        console.log('NOT ADJACENT!');
+        return;
     }
+
+    const newCellOrientation = newCellOrientationForItems(itemOne, itemTwo);
 
     removeSelectedItems();
 
     const newID = ++uuid;
     addItem(newID, newCellOrientation);
+}
+
+function newCellOrientationForItems(firstItem, secondItem) {
+    const orderedItems = orderItems(firstItem, secondItem);
+    const itemOne = orderedItems[0];
+    const itemTwo = orderedItems[1];
+
+    const firstItemRect = itemOne.getElement().getBoundingClientRect();
+    const secondItemRect = itemTwo.getElement().getBoundingClientRect();
+
+    const widthOne = itemOne.getWidth();
+    const widthTwo = itemTwo.getWidth();
+    const heightOne = itemOne.getHeight();
+    const heightTwo = itemTwo.getHeight();
+
+    const sameRow = firstItemRect.top === secondItemRect.top;
+    const sameCol = firstItemRect.left === secondItemRect.left;
+
+    let newCellOrientation;
+    if (sameRow) {
+        newCellOrientation = "itemWide";
+        const widthLevel = Math.floor((widthOne + widthTwo) / itemWidth);
+        if (widthLevel == 3) {
+            newCellOrientation = "itemVeryWide"
+        }
+    } else if (sameCol) {
+        newCellOrientation = "itemTall";
+        const heightLevel = Math.floor((heightOne + heightTwo) / itemHeight);
+        if (heightLevel == 3) {
+            newCellOrientation = "itemVeryTall"
+        }
+    }
+    return newCellOrientation
+}
+
+function areAdjacent(firstItem, secondItem) {
+    const orderedItems = orderItems(firstItem, secondItem);
+    const itemOne = orderedItems[0];
+    const itemTwo = orderedItems[1];
+
+    const firstItemRect = itemOne.getElement().getBoundingClientRect();
+    const secondItemRect = itemTwo.getElement().getBoundingClientRect();
+
+    const widthOne = itemOne.getWidth();
+    const heightOne = itemOne.getHeight();
+
+    const marginOne = itemOne.getMargin();
+    const marginTwo = itemTwo.getMargin();
+
+    console.log('m1 left: ' + firstItemRect.left);
+    console.log('m2 left: ' + secondItemRect.left);
+
+    const sameRow = firstItemRect.top === secondItemRect.top;
+    const sameCol = firstItemRect.left === secondItemRect.left;
+
+    if (sameRow) {
+        const expectedStart = Math.floor(firstItemRect.left + widthOne + marginOne.right + marginTwo.left);
+        const actualStart = Math.floor(secondItemRect.left);
+        return expectedStart == actualStart;
+    } else if (sameCol) {
+        const expectedStart = Math.floor(firstItemRect.top + heightOne + marginOne.bottom + marginTwo.top);
+        const actualStart = Math.floor(secondItemRect.top);
+        console.log('expected: ' + expectedStart);
+        console.log('actual: ' + actualStart);
+        return expectedStart == actualStart;
+    }
+    return false;
+}
+
+//Helper function that orders 2 items so the first is more to the left/top than the other
+function orderItems(firstItem, secondItem) {
+    let itemOne = firstItem;
+    let itemTwo = secondItem;
+
+    let firstItemRect = itemOne.getElement().getBoundingClientRect();
+    let secondItemRect = itemTwo.getElement().getBoundingClientRect();
+    //Item One should always be the the left/top of itemTwo
+    if (firstItemRect.left < secondItemRect.left) {
+        itemOne = firstItem;
+        itemTwo = secondItem;
+    } else if (firstItemRect.top < secondItemRect.top) {
+        itemOne = firstItem;
+        itemTwo = secondItem;
+    } else {
+        itemOne = secondItem;
+        itemTwo = firstItem;
+    }
+    return [itemOne, itemTwo];
 }
 
 // Add a 1x1 cell to the grid if the maximum number of items has not been reached
@@ -231,6 +319,7 @@ function addItem(id, itemType = 'item') {
     grid.add(fragment.firstChild);
     document.body.insertBefore(fragment, document.body.childNodes[id]);
 
+    //Set Config Placeholder
     const configElement = document.getElementById(itemConfigTextName(id));
     configElement.placeholder = "config name";
 
@@ -495,15 +584,30 @@ function copyTextToClipboard() {
 ****************************************************** Helpers *******************************************************************************
 *******************************************************************************************************************************************************************/
 
+//Helper function to see what the accessible properties of an object are
+function printObjectProperties(object) {
+    console.log('printing all properties for object: ' + object);
+    for (let name in object) {
+        if (object.hasOwnProperty(name)) {
+            console.log(name + " = " + object[name]);
+        }
+    }
+}
+
+
 //Helper method that decides the cell type based on the item's width or height
 //TODO: need to create 3x3 items dynamically which is currently not covered.
 //Currently the grid only makes 1x1, 2x1, and 1x2 grid items.
 function getItemTypeForDimensions(width, height) {
     let cellType = "item";
-    if (width > 1) {
+    if (width == 2) {
         cellType = "itemWide";
-    } else if (height > 1) {
+    } else if (width == 3) {
+        cellType = "itemVeryWide";
+    } else if (height == 2) {
         cellType = "itemTall";
+    } else if (height == 3) {
+        cellType = "itemVeryTall";
     }
     return cellType;
 }
