@@ -242,9 +242,6 @@ function areAdjacent(firstItem, secondItem) {
     const marginOne = itemOne.getMargin();
     const marginTwo = itemTwo.getMargin();
 
-    console.log('m1 left: ' + firstItemRect.left);
-    console.log('m2 left: ' + secondItemRect.left);
-
     const sameRow = firstItemRect.top === secondItemRect.top;
     const sameCol = firstItemRect.left === secondItemRect.left;
 
@@ -255,8 +252,6 @@ function areAdjacent(firstItem, secondItem) {
     } else if (sameCol) {
         const expectedStart = Math.floor(firstItemRect.top + heightOne + marginOne.bottom + marginTwo.top);
         const actualStart = Math.floor(secondItemRect.top);
-        console.log('expected: ' + expectedStart);
-        console.log('actual: ' + actualStart);
         return expectedStart == actualStart;
     }
     return false;
@@ -539,8 +534,8 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = '<input id="' + textFieldName + '" type="text">' + 
-    '</input>';
+    let html = '<textarea id="' + textFieldName + '" type="text">' + 
+    '</textarea>';
     return html
 }
 
@@ -623,7 +618,8 @@ function handleListEvent(event) {
     // console.log('targetType: ' + targetType);
     // console.log('Clicked!: ' + targetType);
 
-    if(targetType === 'HTMLSelectElement' || targetType === 'HTMLInputElement') {
+    const safeTargetsList = ['HTMLSelectElement', 'HTMLInputElement', 'HTMLTextAreaElement'];
+    if(safeTargetsList.indexOf(targetType) >= 0) {
       selectClicked = true;
     } else {
       selectClicked = false;
