@@ -165,6 +165,8 @@ function createGridItems() {
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
 
+    updateGridSize(numberOfColumns);
+
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
         addItem(count);
     }
@@ -369,8 +371,15 @@ function toggleSelectElement(event) {
 function createGridFromJSON(jsonObject) {
     const title = jsonObject.title;
     const titleVisible = jsonObject.titleVisible;
-    const numberOfColumns = jsonObject.layout.gridSize.columns;
-    const numberOfRows = jsonObject.layout.gridSize.rows;
+    let numberOfColumns = 3;
+    let numberOfRows = 3;
+    const gridSize = jsonObject.layout.gridSize;
+    if (gridSize) {
+        numberOfColumns = gridSize.columns;
+        numberOfRows = gridSize.rows;
+    }
+
+    updateGridSize(numberOfColumns);
 
     titleInput.value = title;
     if(titleVisible) {
@@ -384,8 +393,22 @@ function createGridFromJSON(jsonObject) {
 
     removeItems();
 
-    for (count = 0; count < jsonObject.widgets.length; count++) {
-        const widget = jsonObject.widgets[count];
+    addWidgetsFromJSON(jsonObject);
+
+    grid.refreshItems().layout();
+}
+
+function updateGridSize(numberOfColumns) {
+    gridElement.style.width = ((itemWidth + 10) * numberOfColumns) + "px";
+}
+
+function addWidgetsFromJSON(jsonObject) {
+    let widgets = jsonObject.widgets;
+    if (!widgets) {
+        widgets = jsonObject.layout.widgets;
+    }
+    for (count = 0; count < widgets.length; count++) {
+        const widget = widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
         const widgetWidth = widget.width;
@@ -408,8 +431,6 @@ function createGridFromJSON(jsonObject) {
             configElement.value = widgetConfig;
         }
     }
-
-    grid.refreshItems().layout();
 }
 
 //Listener that handles processing the json file the user selects to upload and generate the grid from
@@ -462,11 +483,10 @@ function generateJSON() {
         }
 
         let configJSONString = getItemConfigText(newIndex);
-        if (configJSONString.indexOf('{') != 0) {
+        if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
         }
         let configJSONMessage = parseJSONString(configJSONString, column, row);
-        
         if (!isJSONEmpty(configJSONMessage)) {
             configurations.push(configJSONMessage);
         }
@@ -491,23 +511,31 @@ function generateJSON() {
 //generates a message on the page letting the user know if there are any parsing errors while doing this.
 function parseJSONString(jsonString, column, row) {
     let configJSON;
-    let message;
-    let color;
-    try {
-        configJSON = JSON.parse(jsonString);
-        configJSONName = Object.keys(configJSON)[0];
-        message = 'SUCCESS!!!';
-        color = 'green'
-      }
-      catch(err) {
-        message = 'gridRow: ' + row + ', gridColumn: ' + column + ' ERROR : ' + err.message;
-        color = 'red'
-      }
-      let jsonMessageElement = document.getElementById("jsonGenerationMessage");
-      jsonMessageElement.innerHTML = message;
-      jsonMessageElement.style.color = color;
+    let message = 'SUCCESS!!!';
+    let color = 'green';
+    let success = false;
+    if (!jsonString && jsonString.trim().length <= 0) {
+        console.log('empty JSON String');
+    } else if (jsonString.trim().indexOf(' ') > 0) {
+        configJSON = jsonString;
+        if (typeof configJSON =='object') {
+            console.log('already a JSON object : ' + configJSON);
+        } else {
+            try {
+                configJSON = JSON.parse(jsonString);
+                configJSONName = Object.keys(configJSON)[0];
+            } catch(err) {
+                message = 'gridRow: ' + row + ', gridColumn: ' + column + '  ERROR : ' + err.message + ' : ' + jsonString;
+                color = 'red';
+            }
+        }
+    }
+    
+    let jsonMessageElement = document.getElementById("jsonGenerationMessage");
+    jsonMessageElement.innerHTML = message;
+    jsonMessageElement.style.color = color;
 
-      return configJSON;
+    return configJSON;
 }
 
 /*******************************************************************************************************************************************************************
@@ -674,8 +702,7 @@ function hideElement(elementIDString) {
 //Gets the selected value of a select HTML list
 function getSelectedListElementValue(listName, itemID) {
     const listElement = getSelectListElement(listName, itemID);
-    const selectedValue = listElement.options[listElement.selectedIndex].text;
-    return selectedValue;
+    return listElement.value;
 }
 
 //Gets the select HTML list element itself
@@ -690,7 +717,7 @@ function getItemConfigText(itemID) {
     const configTextFieldName = itemConfigTextName(itemID);
     const textFieldElement = document.getElementById(configTextFieldName);
     const configName = textFieldElement.value;
-    return configName;
+    return configName.trim();
 }
 
 function isJSONEmpty(obj) {
