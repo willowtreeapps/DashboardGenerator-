@@ -77,7 +77,7 @@ const combineSelectedButton = document.getElementById('combineSelectedButton');
 const itemWidth = 250;
 const itemHeight = 250;
 
-const itemTypesQueryString = '.item, .itemTall, .itemWide, .itemVeryWide, .itemVeryTall';
+const itemTypesQueryString = '.item';
 
 const jobsListName = 'jobs';
 const widgetsListName = 'widgets';
@@ -213,21 +213,18 @@ function newCellOrientationForItems(firstItem, secondItem) {
     const sameRow = firstItemRect.top === secondItemRect.top;
     const sameCol = firstItemRect.left === secondItemRect.left;
 
-    let newCellOrientation;
+    const maxWidth = Math.max(widthOne, widthTwo) / itemWidth;
+    const maxHeight = Math.max(heightOne, heightTwo) / itemHeight;
+
+    let newCellOrientation = [maxWidth, maxHeight];
     if (sameRow) {
-        newCellOrientation = "itemWide";
-        const widthLevel = Math.floor((widthOne + widthTwo) / itemWidth);
-        if (widthLevel == 3) {
-            newCellOrientation = "itemVeryWide"
-        }
+        const widthLevel = Math.floor(widthOne + widthTwo) / itemWidth;
+        newCellOrientation[0] = widthLevel;
     } else if (sameCol) {
-        newCellOrientation = "itemTall";
-        const heightLevel = Math.floor((heightOne + heightTwo) / itemHeight);
-        if (heightLevel == 3) {
-            newCellOrientation = "itemVeryTall"
-        }
+        const heightLevel = Math.floor(heightOne + heightTwo) / itemHeight;
+        newCellOrientation[1] = heightLevel;
     }
-    return newCellOrientation
+    return newCellOrientation;
 }
 
 function areAdjacent(firstItem, secondItem) {
@@ -295,12 +292,12 @@ function addCell() {
 }
 
 // Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
-function addItem(id, itemType = 'item') {
+function addItem(id, newCellSize = [1, 1]) {
     let jobsDropDownHtml = createDropDownHTML(jobsListName, widgetsAndJobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="' + itemType + '" id="' + id +
+        '<div class="item" id="' + id +
          '">' + 
             '<div class="item-content-default"' +
             '" onmousedown="return handleListEvent(event)"' + 
@@ -322,6 +319,13 @@ function addItem(id, itemType = 'item') {
 
     grid.refreshItems().layout();
     ++uuid;
+
+    //Resize cell
+    const cellElement = document.getElementById(id);
+    cellElement.style.width = (newCellSize[0] * itemWidth) + "px";
+    cellElement.style.height = (newCellSize[1] * itemHeight) + "px";
+
+    grid.refreshItems().layout();
 }
 
 // Remove all items in the grid
@@ -417,8 +421,8 @@ function addWidgetsFromJSON(jsonObject) {
         const widgetWidget = widget.widget;
         const widgetConfig = widget.config;
 
-        const newCellType = getItemTypeForDimensions(widgetWidth, widgetHeight)
-        addItem(count, newCellType);
+        const newCellSize = [widgetWidth, widgetHeight];
+        addItem(count, newCellSize);
 
         let selectedJob = getSelectListElement(jobsListName, count);
         let selectedWidget = getSelectListElement(widgetsListName, count);
@@ -615,24 +619,6 @@ function printObjectProperties(object) {
             console.log(name + " = " + object[name]);
         }
     }
-}
-
-
-//Helper method that decides the cell type based on the item's width or height
-//TODO: need to create 3x3 items dynamically which is currently not covered.
-//Currently the grid only makes 1x1, 2x1, and 1x2 grid items.
-function getItemTypeForDimensions(width, height) {
-    let cellType = "item";
-    if (width == 2) {
-        cellType = "itemWide";
-    } else if (width == 3) {
-        cellType = "itemVeryWide";
-    } else if (height == 2) {
-        cellType = "itemTall";
-    } else if (height == 3) {
-        cellType = "itemVeryTall";
-    }
-    return cellType;
 }
 
 //Listener that handles the mousedown event on each grid item to be able to set the selectClicked bool
