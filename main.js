@@ -375,12 +375,16 @@ function toggleSelectElement(event) {
 function createGridFromJSON(jsonObject) {
     const title = jsonObject.title;
     const titleVisible = jsonObject.titleVisible;
-    let numberOfColumns = 3;
-    let numberOfRows = 3;
+    let numberOfColumns;
+    let numberOfRows;
     const gridSize = jsonObject.layout.gridSize;
     if (gridSize) {
         numberOfColumns = gridSize.columns;
         numberOfRows = gridSize.rows;
+    } else {
+        const gridSize = getMaxGridSize(jsonObject.layout.widgets);
+        numberOfColumns = gridSize[0];
+        numberOfRows = gridSize[1];
     }
 
     updateGridSize(numberOfColumns);
@@ -400,6 +404,23 @@ function createGridFromJSON(jsonObject) {
     addWidgetsFromJSON(jsonObject);
 
     grid.refreshItems().layout();
+}
+
+function getMaxGridSize(widgetsJSONArray) {
+    let maxCol = 3;
+    let maxRow = 3;
+    for (i = 0; i < widgetsJSONArray.length; i++) {
+        const widget = widgetsJSONArray[i];
+        const widgetColLimit = widget.col + (widget.width - 1);
+        const widgetRowLimit = widget.row + (widget.height - 1);
+        if (widgetColLimit > maxCol) {
+            maxCol = widgetColLimit;
+        }
+        if (widgetRowLimit > maxRow) {
+            maxRow = widgetRowLimit;
+        }
+    }
+    return [maxCol, maxRow];
 }
 
 function updateGridSize(numberOfColumns) {
