@@ -488,7 +488,7 @@ function generateJSON() {
     const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
     
     const widgets = [];
-    const configurations = [];
+    const configurations = {};
     const items = document.querySelectorAll(itemTypesQueryString);
     
     for(i = 0; i < items.length; i++) {
@@ -507,21 +507,23 @@ function generateJSON() {
             selectedWidget = '';
         }
 
+        const configJSONName = selectedJob;
         let configJSONString = getItemConfigText(newIndex);
         if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
         }
-        let configJSONMessage = parseJSONString(configJSONString, column, row);
-        if (!isJSONEmpty(configJSONMessage)) {
-            configurations.push(configJSONMessage);
-        }
+        
+        const configJSONObject = parseJSONString(configJSONString, column, row);
+        console.log('JSON NAME : ' + configJSONName);
+        console.log('JSON : ' + configJSONObject);
+        configurations[configJSONName] = configJSONObject;
 
         const item = grid.getItems()[i];
         
         const blockWidth = Math.floor(item.getWidth() / itemWidth);
         const blockHeight = Math.floor(item.getHeight() / itemHeight);
 
-        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONString);
+        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONName);
         widgets.push(widgetObject);
     }
 
@@ -541,14 +543,13 @@ function parseJSONString(jsonString, column, row) {
     let success = false;
     if (!jsonString && jsonString.trim().length <= 0) {
         console.log('empty JSON String');
-    } else if (jsonString.trim().indexOf(' ') > 0) {
+    } else {
         configJSON = jsonString;
         if (typeof configJSON =='object') {
             console.log('already a JSON object : ' + configJSON);
         } else {
             try {
                 configJSON = JSON.parse(jsonString);
-                configJSONName = Object.keys(configJSON)[0];
             } catch(err) {
                 message = 'gridRow: ' + row + ', gridColumn: ' + column + '  ERROR : ' + err.message + ' : ' + jsonString;
                 color = 'red';
