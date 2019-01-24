@@ -581,10 +581,12 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
     '>';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
-        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>'
+        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
         html+= '<option value="' + itemName + '">' + itemName + '</option>';
     }
     html+= '</select>';
+
+    html+= '<br />' ;
 
     return html;
 }
@@ -594,6 +596,7 @@ function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
     let html = '<textarea id="' + textFieldName + '" type="text">' + 
     '</textarea>';
+    html+= '<br />' ;
     return html
 }
 
