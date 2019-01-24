@@ -9,28 +9,9 @@
   position: absolute;
   width: 250px;
   height: 250px;
-  margin: 5px;
+  margin: 2px;
   z-index: 1;
 }
-
-.itemTall {
-  display: block;
-  position: absolute;
-  width: 250px;
-  height: 500px;
-  margin: 5px;
-  z-index: 1;
-}
-
-.itemWide {
-  display: block;
-  position: absolute;
-  width: 500px;
-  height: 250px;
-  margin: 5px;
-  z-index: 1;
-}
-
 
 .item.muuri-item-hidden {
   z-index: 0;

@@ -15,7 +15,8 @@ class GridData {
 }
 
 class ItemData {
-    constructor(col, row, width, height, widget, job, config) {
+    constructor(id, col, row, width, height, widget, job, config) {
+        this.id = id;
         this.col = col;
         this.row = row;
         this.width = width;
@@ -76,7 +77,7 @@ const combineSelectedButton = document.getElementById('combineSelectedButton');
 const itemWidth = 250;
 const itemHeight = 250;
 
-const itemTypesQueryString = '.item, .itemTall, .itemWide';
+const itemTypesQueryString = '.item';
 
 const jobsListName = 'jobs';
 const widgetsListName = 'widgets';
@@ -164,6 +165,8 @@ function createGridItems() {
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
 
+    updateGridSize(numberOfColumns);
+
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
         addItem(count);
     }
@@ -177,22 +180,101 @@ function combineSelected() {
     if(selectedElements.length != 2) {
         return;
     }
-    const itemOne = selectedElements[0];
-    const itemTwo =  selectedElements[1];
+    const items = grid.getItems(selectedElements);
+    const itemOne = items[0];
+    const itemTwo =  items[1];
 
-    const itemOneOffset = itemOne.id;
-    const itemTwoOffset = itemTwo.id;
-    const positionDifference  = Math.abs(itemOneOffset - itemTwoOffset);
-
-    let newCellOrientation = "itemTall";
-    if (positionDifference < 2) {
-        newCellOrientation = "itemWide";
+    if (!areAdjacent(itemOne, itemTwo)) {
+        console.log('NOT ADJACENT!');
+        return;
     }
+
+    const newCellOrientation = newCellOrientationForItems(itemOne, itemTwo);
 
     removeSelectedItems();
 
     const newID = ++uuid;
     addItem(newID, newCellOrientation);
+}
+
+function newCellOrientationForItems(firstItem, secondItem) {
+    const orderedItems = orderItems(firstItem, secondItem);
+    const itemOne = orderedItems[0];
+    const itemTwo = orderedItems[1];
+
+    const firstItemRect = itemOne.getElement().getBoundingClientRect();
+    const secondItemRect = itemTwo.getElement().getBoundingClientRect();
+
+    const widthOne = itemOne.getWidth();
+    const widthTwo = itemTwo.getWidth();
+    const heightOne = itemOne.getHeight();
+    const heightTwo = itemTwo.getHeight();
+
+    const sameRow = firstItemRect.top === secondItemRect.top;
+    const sameCol = firstItemRect.left === secondItemRect.left;
+
+    const maxWidth = Math.max(widthOne, widthTwo) / itemWidth;
+    const maxHeight = Math.max(heightOne, heightTwo) / itemHeight;
+
+    let newCellOrientation = [maxWidth, maxHeight];
+    if (sameRow) {
+        const widthLevel = Math.floor(widthOne + widthTwo) / itemWidth;
+        newCellOrientation[0] = widthLevel;
+    } else if (sameCol) {
+        const heightLevel = Math.floor(heightOne + heightTwo) / itemHeight;
+        newCellOrientation[1] = heightLevel;
+    }
+    return newCellOrientation;
+}
+
+function areAdjacent(firstItem, secondItem) {
+    const orderedItems = orderItems(firstItem, secondItem);
+    const itemOne = orderedItems[0];
+    const itemTwo = orderedItems[1];
+
+    const firstItemRect = itemOne.getElement().getBoundingClientRect();
+    const secondItemRect = itemTwo.getElement().getBoundingClientRect();
+
+    const widthOne = itemOne.getWidth();
+    const heightOne = itemOne.getHeight();
+
+    const marginOne = itemOne.getMargin();
+    const marginTwo = itemTwo.getMargin();
+
+    const sameRow = firstItemRect.top === secondItemRect.top;
+    const sameCol = firstItemRect.left === secondItemRect.left;
+
+    if (sameRow) {
+        const expectedStart = Math.floor(firstItemRect.left + widthOne + marginOne.right + marginTwo.left);
+        const actualStart = Math.floor(secondItemRect.left);
+        return expectedStart == actualStart;
+    } else if (sameCol) {
+        const expectedStart = Math.floor(firstItemRect.top + heightOne + marginOne.bottom + marginTwo.top);
+        const actualStart = Math.floor(secondItemRect.top);
+        return expectedStart == actualStart;
+    }
+    return false;
+}
+
+//Helper function that orders 2 items so the first is more to the left/top than the other
+function orderItems(firstItem, secondItem) {
+    let itemOne = firstItem;
+    let itemTwo = secondItem;
+
+    let firstItemRect = itemOne.getElement().getBoundingClientRect();
+    let secondItemRect = itemTwo.getElement().getBoundingClientRect();
+    //Item One should always be the the left/top of itemTwo
+    if (firstItemRect.left < secondItemRect.left) {
+        itemOne = firstItem;
+        itemTwo = secondItem;
+    } else if (firstItemRect.top < secondItemRect.top) {
+        itemOne = firstItem;
+        itemTwo = secondItem;
+    } else {
+        itemOne = secondItem;
+        itemTwo = firstItem;
+    }
+    return [itemOne, itemTwo];
 }
 
 // Add a 1x1 cell to the grid if the maximum number of items has not been reached
@@ -210,12 +292,12 @@ function addCell() {
 }
 
 // Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
-function addItem(id, itemType = 'item') {
+function addItem(id, newCellSize = [1, 1]) {
     let jobsDropDownHtml = createDropDownHTML(jobsListName, widgetsAndJobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsAndJobsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="' + itemType + '" id="' + id +
+        '<div class="item" id="' + id +
          '">' + 
             '<div class="item-content-default"' +
             '" onmousedown="return handleListEvent(event)"' + 
@@ -231,11 +313,19 @@ function addItem(id, itemType = 'item') {
     grid.add(fragment.firstChild);
     document.body.insertBefore(fragment, document.body.childNodes[id]);
 
+    //Set Config Placeholder
     const configElement = document.getElementById(itemConfigTextName(id));
     configElement.placeholder = "config name";
 
     grid.refreshItems().layout();
     ++uuid;
+
+    //Resize cell
+    const cellElement = document.getElementById(id);
+    cellElement.style.width = (newCellSize[0] * itemWidth) + "px";
+    cellElement.style.height = (newCellSize[1] * itemHeight) + "px";
+
+    grid.refreshItems().layout();
 }
 
 // Remove all items in the grid
@@ -285,8 +375,19 @@ function toggleSelectElement(event) {
 function createGridFromJSON(jsonObject) {
     const title = jsonObject.title;
     const titleVisible = jsonObject.titleVisible;
-    const numberOfColumns = jsonObject.layout.gridSize.columns;
-    const numberOfRows = jsonObject.layout.gridSize.rows;
+    let numberOfColumns;
+    let numberOfRows;
+    const gridSize = jsonObject.layout.gridSize;
+    if (gridSize) {
+        numberOfColumns = gridSize.columns;
+        numberOfRows = gridSize.rows;
+    } else {
+        const gridSize = getMaxGridSize(jsonObject.layout.widgets);
+        numberOfColumns = gridSize[0];
+        numberOfRows = gridSize[1];
+    }
+
+    updateGridSize(numberOfColumns);
 
     titleInput.value = title;
     if(titleVisible) {
@@ -300,8 +401,39 @@ function createGridFromJSON(jsonObject) {
 
     removeItems();
 
-    for (count = 0; count < jsonObject.widgets.length; count++) {
-        const widget = jsonObject.widgets[count];
+    addWidgetsFromJSON(jsonObject);
+
+    grid.refreshItems().layout();
+}
+
+function getMaxGridSize(widgetsJSONArray) {
+    let maxCol = 3;
+    let maxRow = 3;
+    for (i = 0; i < widgetsJSONArray.length; i++) {
+        const widget = widgetsJSONArray[i];
+        const widgetColLimit = widget.col + (widget.width - 1);
+        const widgetRowLimit = widget.row + (widget.height - 1);
+        if (widgetColLimit > maxCol) {
+            maxCol = widgetColLimit;
+        }
+        if (widgetRowLimit > maxRow) {
+            maxRow = widgetRowLimit;
+        }
+    }
+    return [maxCol, maxRow];
+}
+
+function updateGridSize(numberOfColumns) {
+    gridElement.style.width = ((itemWidth + 10) * numberOfColumns) + "px";
+}
+
+function addWidgetsFromJSON(jsonObject) {
+    let widgets = jsonObject.widgets;
+    if (!widgets) {
+        widgets = jsonObject.layout.widgets;
+    }
+    for (count = 0; count < widgets.length; count++) {
+        const widget = widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
         const widgetWidth = widget.width;
@@ -310,8 +442,8 @@ function createGridFromJSON(jsonObject) {
         const widgetWidget = widget.widget;
         const widgetConfig = widget.config;
 
-        const newCellType = getItemTypeForDimensions(widgetWidth, widgetHeight)
-        addItem(count, newCellType);
+        const newCellSize = [widgetWidth, widgetHeight];
+        addItem(count, newCellSize);
 
         let selectedJob = getSelectListElement(jobsListName, count);
         let selectedWidget = getSelectListElement(widgetsListName, count);
@@ -324,8 +456,6 @@ function createGridFromJSON(jsonObject) {
             configElement.value = widgetConfig;
         }
     }
-
-    grid.refreshItems().layout();
 }
 
 //Listener that handles processing the json file the user selects to upload and generate the grid from
@@ -358,7 +488,7 @@ function generateJSON() {
     const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
     
     const widgets = [];
-    const configurations = [];
+    const configurations = {};
     const items = document.querySelectorAll(itemTypesQueryString);
     
     for(i = 0; i < items.length; i++) {
@@ -377,22 +507,23 @@ function generateJSON() {
             selectedWidget = '';
         }
 
+        const configJSONName = selectedJob;
         let configJSONString = getItemConfigText(newIndex);
-        if (configJSONString.indexOf('{') != 0) {
+        if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
         }
-        let configJSONMessage = parseJSONString(configJSONString, column, row);
         
-        if (!isJSONEmpty(configJSONMessage)) {
-            configurations.push(configJSONMessage);
-        }
+        const configJSONObject = parseJSONString(configJSONString, column, row);
+        console.log('JSON NAME : ' + configJSONName);
+        console.log('JSON : ' + configJSONObject);
+        configurations[configJSONName] = configJSONObject;
 
         const item = grid.getItems()[i];
         
         const blockWidth = Math.floor(item.getWidth() / itemWidth);
         const blockHeight = Math.floor(item.getHeight() / itemHeight);
 
-        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONString);
+        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONName);
         widgets.push(widgetObject);
     }
 
@@ -407,23 +538,30 @@ function generateJSON() {
 //generates a message on the page letting the user know if there are any parsing errors while doing this.
 function parseJSONString(jsonString, column, row) {
     let configJSON;
-    let message;
-    let color;
-    try {
-        configJSON = JSON.parse(jsonString);
-        configJSONName = Object.keys(configJSON)[0];
-        message = 'SUCCESS!!!';
-        color = 'green'
-      }
-      catch(err) {
-        message = 'gridRow: ' + row + ', gridColumn: ' + column + ' ERROR : ' + err.message;
-        color = 'red'
-      }
-      let jsonMessageElement = document.getElementById("jsonGenerationMessage");
-      jsonMessageElement.innerHTML = message;
-      jsonMessageElement.style.color = color;
+    let message = 'SUCCESS!!!';
+    let color = 'green';
+    let success = false;
+    if (!jsonString && jsonString.trim().length <= 0) {
+        console.log('empty JSON String');
+    } else {
+        configJSON = jsonString;
+        if (typeof configJSON =='object') {
+            console.log('already a JSON object : ' + configJSON);
+        } else {
+            try {
+                configJSON = JSON.parse(jsonString);
+            } catch(err) {
+                message = 'gridRow: ' + row + ', gridColumn: ' + column + '  ERROR : ' + err.message + ' : ' + jsonString;
+                color = 'red';
+            }
+        }
+    }
+    
+    let jsonMessageElement = document.getElementById("jsonGenerationMessage");
+    jsonMessageElement.innerHTML = message;
+    jsonMessageElement.style.color = color;
 
-      return configJSON;
+    return configJSON;
 }
 
 /*******************************************************************************************************************************************************************
@@ -450,8 +588,8 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = '<input id="' + textFieldName + '" type="text">' + 
-    '</input>';
+    let html = '<textarea id="' + textFieldName + '" type="text">' + 
+    '</textarea>';
     return html
 }
 
@@ -495,17 +633,14 @@ function copyTextToClipboard() {
 ****************************************************** Helpers *******************************************************************************
 *******************************************************************************************************************************************************************/
 
-//Helper method that decides the cell type based on the item's width or height
-//TODO: need to create 3x3 items dynamically which is currently not covered.
-//Currently the grid only makes 1x1, 2x1, and 1x2 grid items.
-function getItemTypeForDimensions(width, height) {
-    let cellType = "item";
-    if (width > 1) {
-        cellType = "itemWide";
-    } else if (height > 1) {
-        cellType = "itemTall";
+//Helper function to see what the accessible properties of an object are
+function printObjectProperties(object) {
+    console.log('printing all properties for object: ' + object);
+    for (let name in object) {
+        if (object.hasOwnProperty(name)) {
+            console.log(name + " = " + object[name]);
+        }
     }
-    return cellType;
 }
 
 //Listener that handles the mousedown event on each grid item to be able to set the selectClicked bool
@@ -519,7 +654,8 @@ function handleListEvent(event) {
     // console.log('targetType: ' + targetType);
     // console.log('Clicked!: ' + targetType);
 
-    if(targetType === 'HTMLSelectElement' || targetType === 'HTMLInputElement') {
+    const safeTargetsList = ['HTMLSelectElement', 'HTMLInputElement', 'HTMLTextAreaElement'];
+    if(safeTargetsList.indexOf(targetType) >= 0) {
       selectClicked = true;
     } else {
       selectClicked = false;
@@ -574,8 +710,7 @@ function hideElement(elementIDString) {
 //Gets the selected value of a select HTML list
 function getSelectedListElementValue(listName, itemID) {
     const listElement = getSelectListElement(listName, itemID);
-    const selectedValue = listElement.options[listElement.selectedIndex].text;
-    return selectedValue;
+    return listElement.value;
 }
 
 //Gets the select HTML list element itself
@@ -590,7 +725,7 @@ function getItemConfigText(itemID) {
     const configTextFieldName = itemConfigTextName(itemID);
     const textFieldElement = document.getElementById(configTextFieldName);
     const configName = textFieldElement.value;
-    return configName;
+    return configName.trim();
 }
 
 function isJSONEmpty(obj) {
