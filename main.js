@@ -428,6 +428,7 @@ function updateGridSize(numberOfColumns) {
 }
 
 function addWidgetsFromJSON(jsonObject) {
+    const configurations = jsonObject.config;
     let widgets = jsonObject.widgets;
     if (!widgets) {
         widgets = jsonObject.layout.widgets;
@@ -451,9 +452,12 @@ function addWidgetsFromJSON(jsonObject) {
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
-        if (widgetConfig && widgetConfig.length > 2) {
+        if (widgetJob && widgetJob.length > 0) {
             const configElement = document.getElementById(itemConfigTextName(count));
-            configElement.value = widgetConfig;
+            const configValue = JSON.stringify(configurations[widgetJob], null, '\t');
+            if (configValue) {
+                configElement.value = configValue;
+            }
         }
     }
 }
