@@ -65,6 +65,9 @@ const titleVisibleToggle = document.getElementById("titleVisibleToggle");
 const columnInput = document.getElementById("columnInput");
 const rowInput = document.getElementById("rowInput");
 
+const resizeWidth = document.getElementById("resizeWidth");
+const resizeHeight = document.getElementById("resizeHeight");
+
 const gridElement = document.querySelector('.grid');
 
 const createButton = document.getElementById("createButton");
@@ -73,6 +76,7 @@ const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
 const combineSelectedButton = document.getElementById('combineSelectedButton');
+const resizeSelectedButton = document.getElementById('resizeSelectedButton');
 
 const itemWidth = 250;
 const itemHeight = 250;
@@ -84,6 +88,9 @@ const widgetsListName = 'widgets';
 
 const jobsPlaceholderMessage = 'Select a Job';
 const widgetsPlaceholderMessage = 'Select a Widget';
+
+const dimensionNameWidth = 'width';
+const dimensionNameHeight = 'height';
 
 //prevent grid items from dragging when select list is clicked
 let selectClicked = false;
@@ -120,6 +127,8 @@ function setup() {
     titleInput.placeholder = "Enter title";
     columnInput.placeholder = "col";
     rowInput.placeholder = "row";
+    resizeWidth.placeholder = "resize width";
+    resizeHeight.placeholder = "resize height";
 
     titleVisibleToggle.addEventListener('click', toggleTitleVisibility);
     createButton.addEventListener('click', createGridItems);
@@ -129,6 +138,7 @@ function setup() {
     document.addEventListener('click', toggleSelectElement);
     addButton.addEventListener('click', addCell);
     combineSelectedButton.addEventListener('click', combineSelected);
+    resizeSelectedButton.addEventListener('click', resizeSelected);
 
     hideElement("saveSection");
 
@@ -195,6 +205,19 @@ function combineSelected() {
 
     const newID = ++uuid;
     addItem(newID, newCellOrientation);
+}
+
+function resizeSelected() {
+    const width = Math.max(resizeWidth.value, 1);
+    const height = Math.max(resizeHeight.value, 1);
+
+    for (i = 0; i < selectedElements.length; i++) {
+        const element = selectedElements[i];
+        element.style.width = (width * itemWidth) + "px";
+        element.style.height = (height * itemHeight) + "px";
+    }
+
+    grid.refreshItems().layout();
 }
 
 function newCellOrientationForItems(firstItem, secondItem) {
@@ -296,6 +319,8 @@ function addItem(id, newCellSize = [1, 1]) {
     let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
+    let widthField = createDimensionField(id, dimensionNameWidth);
+    let heightField = createDimensionField(id, dimensionNameHeight);
     const fragment = createDOMFragment(
         '<div class="item" id="' + id +
          '">' + 
@@ -596,8 +621,15 @@ function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
     let html = '<textarea id="' + textFieldName + '" type="text">' + 
     '</textarea>';
-    html+= '<br />' ;
-    return html
+    html+= '<br>' ;
+    html+= '<br>' ;
+    return html;
+}
+
+function createDimensionField(itemID, dimensionName) {
+    let dimensionFieldName = cellDimensionFieldName(itemID, dimensionName);
+    let html = '<input name="' + dimensionFieldName + '" type="text">';
+    return html;
 }
 
 // Create document fragment for given html string
@@ -762,6 +794,10 @@ function itemSelectListName(baseListName, itemID) {
 //Helper to determine what the name of a config HTML textbox is for a given grid item id
 function itemConfigTextName(itemID) {
     return 'config_' + itemID;
+}
+
+function cellDimensionFieldName(itemID, dimensionName) {
+    return 'dimension_' + dimensionName + '_' + itemID;
 }
 
 /*******************************************************************************************************************************************************************
