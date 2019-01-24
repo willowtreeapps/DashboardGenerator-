@@ -293,8 +293,8 @@ function addCell() {
 
 // Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
 function addItem(id, newCellSize = [1, 1]) {
-    let jobsDropDownHtml = createDropDownHTML(jobsListName, widgetsAndJobsList, id, jobsPlaceholderMessage);
-    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsAndJobsList, id, widgetsPlaceholderMessage);
+    let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
+    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
         '<div class="item" id="' + id +
@@ -465,7 +465,7 @@ function addWidgetsFromJSON(jsonObject) {
 //Listener that handles processing the json file the user selects to upload and generate the grid from
 function handleFiles(filesList) {
     const file = filesList[0];
-    fr = new FileReader();
+    fr = new FileReader(); 
     fr.onload = function(e) {
         var rawLog = fr.result;
         let jsonObject = parseJSONString(rawLog, -1, -1);
@@ -669,6 +669,15 @@ function handleListEvent(event) {
 //Listener that handles when the use selects a new job or widget, and pre-fills the config textfield with a template based on the item selected
 function handleListChangeEvent(selectElement, id) {
     const selectedValue = selectElement.options[selectElement.selectedIndex].value;
+    const currentlySelectedJobValue = getSelectListElement(jobsListName, id).options[selectElement.selectedIndex].value;
+    if (currentlySelectedJobValue === selectedValue) {//a job has been selected
+        const correspondingWidgetValue = widgetsList[widgetsList.indexOf(currentlySelectedJobValue)];
+        if (correspondingWidgetValue) {
+            const currentlySelectedWidgetElement = getSelectListElement(widgetsListName, id);
+            currentlySelectedWidgetElement.value = correspondingWidgetValue;
+        }
+    }
+
     const configTemplate = getTemplateForOption(selectedValue);
     
     const configElement = document.getElementById(itemConfigTextName(id));
@@ -808,7 +817,45 @@ const configTemplatesDict = {
 *******************************************************************************************************************************************************************/
 
 
-const widgetsAndJobsList = 
+const widgetsList = 
+[
+'appbot-topics',
+'appbot-wordcloud',
+'apteligent-crashtrend',
+'blackduck-stats',
+'board-cycle',
+'bugsnag-error-occurances',
+'bugsnag-error-trend',
+'build-status',
+'burndown',
+'checkmarx-scan-queue',
+'checkmarx-top-risks',
+'checkmarx-top-scantime',
+'checkmarx_stats',
+'environment-commit-status',
+'google-drive',
+'isitup',
+'onelogin-locked-accounts',
+'pending-pr-count',
+'picture-of-the-day',
+'security-monkey',
+'sentinel-one-inactive',
+'sentinel-one-threats',
+'sentinel-one',
+'sprint-goals',
+'sprinthealth-history',
+'teamcity-build-queue',
+'teamcity-build-status',
+'teamcity-test-trend',
+'test-results',
+'testrail_run-count',
+'testrail_run-results',
+'tracker-burnup',
+'warcraft-profile',
+'zone-clock'
+]
+
+const jobsList = 
 [
 'appbot-topics',
 'appbot-wordcloud',
