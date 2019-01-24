@@ -65,6 +65,9 @@ const titleVisibleToggle = document.getElementById("titleVisibleToggle");
 const columnInput = document.getElementById("columnInput");
 const rowInput = document.getElementById("rowInput");
 
+const resizeWidth = document.getElementById("resizeWidth");
+const resizeHeight = document.getElementById("resizeHeight");
+
 const gridElement = document.querySelector('.grid');
 
 const createButton = document.getElementById("createButton");
@@ -73,6 +76,7 @@ const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
 const combineSelectedButton = document.getElementById('combineSelectedButton');
+const resizeSelectedButton = document.getElementById('resizeSelectedButton');
 
 const itemWidth = 250;
 const itemHeight = 250;
@@ -84,6 +88,9 @@ const widgetsListName = 'widgets';
 
 const jobsPlaceholderMessage = 'Select a Job';
 const widgetsPlaceholderMessage = 'Select a Widget';
+
+const dimensionNameWidth = 'width';
+const dimensionNameHeight = 'height';
 
 //prevent grid items from dragging when select list is clicked
 let selectClicked = false;
@@ -120,6 +127,8 @@ function setup() {
     titleInput.placeholder = "Enter title";
     columnInput.placeholder = "col";
     rowInput.placeholder = "row";
+    resizeWidth.placeholder = "resize width";
+    resizeHeight.placeholder = "resize height";
 
     titleVisibleToggle.addEventListener('click', toggleTitleVisibility);
     createButton.addEventListener('click', createGridItems);
@@ -129,6 +138,7 @@ function setup() {
     document.addEventListener('click', toggleSelectElement);
     addButton.addEventListener('click', addCell);
     combineSelectedButton.addEventListener('click', combineSelected);
+    resizeSelectedButton.addEventListener('click', resizeSelected);
 
     hideElement("saveSection");
 
@@ -195,6 +205,19 @@ function combineSelected() {
 
     const newID = ++uuid;
     addItem(newID, newCellOrientation);
+}
+
+function resizeSelected() {
+    const width = Math.max(resizeWidth.value, 1);
+    const height = Math.max(resizeHeight.value, 1);
+
+    for (i = 0; i < selectedElements.length; i++) {
+        const element = selectedElements[i];
+        element.style.width = (width * itemWidth) + "px";
+        element.style.height = (height * itemHeight) + "px";
+    }
+
+    grid.refreshItems().layout();
 }
 
 function newCellOrientationForItems(firstItem, secondItem) {
@@ -293,9 +316,11 @@ function addCell() {
 
 // Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
 function addItem(id, newCellSize = [1, 1]) {
-    let jobsDropDownHtml = createDropDownHTML(jobsListName, widgetsAndJobsList, id, jobsPlaceholderMessage);
-    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsAndJobsList, id, widgetsPlaceholderMessage);
+    let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
+    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
+    let widthField = createDimensionField(id, dimensionNameWidth);
+    let heightField = createDimensionField(id, dimensionNameHeight);
     const fragment = createDOMFragment(
         '<div class="item" id="' + id +
          '">' + 
@@ -428,6 +453,7 @@ function updateGridSize(numberOfColumns) {
 }
 
 function addWidgetsFromJSON(jsonObject) {
+    const configurations = jsonObject.config;
     let widgets = jsonObject.widgets;
     if (!widgets) {
         widgets = jsonObject.layout.widgets;
@@ -451,9 +477,12 @@ function addWidgetsFromJSON(jsonObject) {
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
-        if (widgetConfig && widgetConfig.length > 2) {
+        if (widgetJob && widgetJob.length > 0) {
             const configElement = document.getElementById(itemConfigTextName(count));
-            configElement.value = widgetConfig;
+            const configValue = JSON.stringify(configurations[widgetJob], null, '\t');
+            if (configValue) {
+                configElement.value = configValue;
+            }
         }
     }
 }
@@ -461,7 +490,7 @@ function addWidgetsFromJSON(jsonObject) {
 //Listener that handles processing the json file the user selects to upload and generate the grid from
 function handleFiles(filesList) {
     const file = filesList[0];
-    fr = new FileReader();
+    fr = new FileReader(); 
     fr.onload = function(e) {
         var rawLog = fr.result;
         let jsonObject = parseJSONString(rawLog, -1, -1);
@@ -577,10 +606,12 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
     '>';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
-        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>'
+        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
         html+= '<option value="' + itemName + '">' + itemName + '</option>';
     }
     html+= '</select>';
+
+    html+= '<br />' ;
 
     return html;
 }
@@ -590,7 +621,15 @@ function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
     let html = '<textarea id="' + textFieldName + '" type="text">' + 
     '</textarea>';
-    return html
+    html+= '<br>' ;
+    html+= '<br>' ;
+    return html;
+}
+
+function createDimensionField(itemID, dimensionName) {
+    let dimensionFieldName = cellDimensionFieldName(itemID, dimensionName);
+    let html = '<input name="' + dimensionFieldName + '" type="text">';
+    return html;
 }
 
 // Create document fragment for given html string
@@ -665,6 +704,15 @@ function handleListEvent(event) {
 //Listener that handles when the use selects a new job or widget, and pre-fills the config textfield with a template based on the item selected
 function handleListChangeEvent(selectElement, id) {
     const selectedValue = selectElement.options[selectElement.selectedIndex].value;
+    const currentlySelectedJobValue = getSelectListElement(jobsListName, id).options[selectElement.selectedIndex].value;
+    if (currentlySelectedJobValue === selectedValue) {//a job has been selected
+        const correspondingWidgetValue = widgetsList[widgetsList.indexOf(currentlySelectedJobValue)];
+        if (correspondingWidgetValue) {
+            const currentlySelectedWidgetElement = getSelectListElement(widgetsListName, id);
+            currentlySelectedWidgetElement.value = correspondingWidgetValue;
+        }
+    }
+
     const configTemplate = getTemplateForOption(selectedValue);
     
     const configElement = document.getElementById(itemConfigTextName(id));
@@ -748,6 +796,10 @@ function itemConfigTextName(itemID) {
     return 'config_' + itemID;
 }
 
+function cellDimensionFieldName(itemID, dimensionName) {
+    return 'dimension_' + dimensionName + '_' + itemID;
+}
+
 /*******************************************************************************************************************************************************************
 ****************************************************** Config Templates *******************************************************************************
 *******************************************************************************************************************************************************************/
@@ -804,7 +856,45 @@ const configTemplatesDict = {
 *******************************************************************************************************************************************************************/
 
 
-const widgetsAndJobsList = 
+const widgetsList = 
+[
+'appbot-topics',
+'appbot-wordcloud',
+'apteligent-crashtrend',
+'blackduck-stats',
+'board-cycle',
+'bugsnag-error-occurances',
+'bugsnag-error-trend',
+'build-status',
+'burndown',
+'checkmarx-scan-queue',
+'checkmarx-top-risks',
+'checkmarx-top-scantime',
+'checkmarx_stats',
+'environment-commit-status',
+'google-drive',
+'isitup',
+'onelogin-locked-accounts',
+'pending-pr-count',
+'picture-of-the-day',
+'security-monkey',
+'sentinel-one-inactive',
+'sentinel-one-threats',
+'sentinel-one',
+'sprint-goals',
+'sprinthealth-history',
+'teamcity-build-queue',
+'teamcity-build-status',
+'teamcity-test-trend',
+'test-results',
+'testrail_run-count',
+'testrail_run-results',
+'tracker-burnup',
+'warcraft-profile',
+'zone-clock'
+]
+
+const jobsList = 
 [
 'appbot-topics',
 'appbot-wordcloud',
