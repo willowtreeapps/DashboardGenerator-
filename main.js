@@ -477,9 +477,9 @@ function addWidgetsFromJSON(jsonObject) {
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
-        if (widgetJob && widgetJob.length > 0) {
+        if (widgetConfig) {
+            const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
             const configElement = document.getElementById(itemConfigTextName(count));
-            const configValue = JSON.stringify(configurations[widgetJob], null, '\t');
             if (configValue) {
                 configElement.value = configValue;
             }
