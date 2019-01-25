@@ -75,7 +75,6 @@ const deleteButton = document.getElementById('deleteButton');
 const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
-const combineSelectedButton = document.getElementById('combineSelectedButton');
 const resizeSelectedButton = document.getElementById('resizeSelectedButton');
 
 const itemWidth = 250;
@@ -137,7 +136,6 @@ function setup() {
     jsonButton.addEventListener('click', generateJSON);
     document.addEventListener('click', toggleSelectElement);
     addButton.addEventListener('click', addCell);
-    combineSelectedButton.addEventListener('click', combineSelected);
     resizeSelectedButton.addEventListener('click', resizeSelected);
 
     hideElement("saveSection");
@@ -184,29 +182,6 @@ function createGridItems() {
     grid.refreshItems().layout();
 }
 
-//combine 2 items to create an extra long or extra wide cell
-//TODO: need to get cell positions to dynamically allow the creation of cells that are 3 units wide or 3 units tall
-function combineSelected() {
-    if(selectedElements.length != 2) {
-        return;
-    }
-    const items = grid.getItems(selectedElements);
-    const itemOne = items[0];
-    const itemTwo =  items[1];
-
-    if (!areAdjacent(itemOne, itemTwo)) {
-        console.log('NOT ADJACENT!');
-        return;
-    }
-
-    const newCellOrientation = newCellOrientationForItems(itemOne, itemTwo);
-
-    removeSelectedItems();
-
-    const newID = ++uuid;
-    addItem(newID, newCellOrientation);
-}
-
 function resizeSelected() {
     const width = Math.max(resizeWidth.value, 1);
     const height = Math.max(resizeHeight.value, 1);
@@ -218,86 +193,6 @@ function resizeSelected() {
     }
 
     grid.refreshItems().layout();
-}
-
-function newCellOrientationForItems(firstItem, secondItem) {
-    const orderedItems = orderItems(firstItem, secondItem);
-    const itemOne = orderedItems[0];
-    const itemTwo = orderedItems[1];
-
-    const firstItemRect = itemOne.getElement().getBoundingClientRect();
-    const secondItemRect = itemTwo.getElement().getBoundingClientRect();
-
-    const widthOne = itemOne.getWidth();
-    const widthTwo = itemTwo.getWidth();
-    const heightOne = itemOne.getHeight();
-    const heightTwo = itemTwo.getHeight();
-
-    const sameRow = firstItemRect.top === secondItemRect.top;
-    const sameCol = firstItemRect.left === secondItemRect.left;
-
-    const maxWidth = Math.max(widthOne, widthTwo) / itemWidth;
-    const maxHeight = Math.max(heightOne, heightTwo) / itemHeight;
-
-    let newCellOrientation = [maxWidth, maxHeight];
-    if (sameRow) {
-        const widthLevel = Math.floor(widthOne + widthTwo) / itemWidth;
-        newCellOrientation[0] = widthLevel;
-    } else if (sameCol) {
-        const heightLevel = Math.floor(heightOne + heightTwo) / itemHeight;
-        newCellOrientation[1] = heightLevel;
-    }
-    return newCellOrientation;
-}
-
-function areAdjacent(firstItem, secondItem) {
-    const orderedItems = orderItems(firstItem, secondItem);
-    const itemOne = orderedItems[0];
-    const itemTwo = orderedItems[1];
-
-    const firstItemRect = itemOne.getElement().getBoundingClientRect();
-    const secondItemRect = itemTwo.getElement().getBoundingClientRect();
-
-    const widthOne = itemOne.getWidth();
-    const heightOne = itemOne.getHeight();
-
-    const marginOne = itemOne.getMargin();
-    const marginTwo = itemTwo.getMargin();
-
-    const sameRow = firstItemRect.top === secondItemRect.top;
-    const sameCol = firstItemRect.left === secondItemRect.left;
-
-    if (sameRow) {
-        const expectedStart = Math.floor(firstItemRect.left + widthOne + marginOne.right + marginTwo.left);
-        const actualStart = Math.floor(secondItemRect.left);
-        return expectedStart == actualStart;
-    } else if (sameCol) {
-        const expectedStart = Math.floor(firstItemRect.top + heightOne + marginOne.bottom + marginTwo.top);
-        const actualStart = Math.floor(secondItemRect.top);
-        return expectedStart == actualStart;
-    }
-    return false;
-}
-
-//Helper function that orders 2 items so the first is more to the left/top than the other
-function orderItems(firstItem, secondItem) {
-    let itemOne = firstItem;
-    let itemTwo = secondItem;
-
-    let firstItemRect = itemOne.getElement().getBoundingClientRect();
-    let secondItemRect = itemTwo.getElement().getBoundingClientRect();
-    //Item One should always be the the left/top of itemTwo
-    if (firstItemRect.left < secondItemRect.left) {
-        itemOne = firstItem;
-        itemTwo = secondItem;
-    } else if (firstItemRect.top < secondItemRect.top) {
-        itemOne = firstItem;
-        itemTwo = secondItem;
-    } else {
-        itemOne = secondItem;
-        itemTwo = firstItem;
-    }
-    return [itemOne, itemTwo];
 }
 
 // Add a 1x1 cell to the grid if the maximum number of items has not been reached
@@ -316,6 +211,26 @@ function addCell() {
 
 // Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
 function addItem(id, newCellSize = [1, 1]) {
+    const fragment = generateItemDOMFragment(id);
+    grid.add(fragment.firstChild);
+    document.body.insertBefore(fragment, document.body.childNodes[id]);
+
+    //Set Config Placeholder
+    const configElement = document.getElementById(itemConfigTextName(id));
+    configElement.placeholder = "config name";
+
+    grid.refreshItems().layout();
+    ++uuid;
+
+    //Resize cell
+    const cellElement = document.getElementById(id);
+    cellElement.style.width = (newCellSize[0] * itemWidth) + "px";
+    cellElement.style.height = (newCellSize[1] * itemHeight) + "px";
+
+    grid.refreshItems().layout();
+}
+
+function generateItemDOMFragment(id) {
     let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
@@ -335,22 +250,7 @@ function addItem(id, newCellSize = [1, 1]) {
                 '</div>' + 
             '</div>' + 
         '</div>');
-    grid.add(fragment.firstChild);
-    document.body.insertBefore(fragment, document.body.childNodes[id]);
-
-    //Set Config Placeholder
-    const configElement = document.getElementById(itemConfigTextName(id));
-    configElement.placeholder = "config name";
-
-    grid.refreshItems().layout();
-    ++uuid;
-
-    //Resize cell
-    const cellElement = document.getElementById(id);
-    cellElement.style.width = (newCellSize[0] * itemWidth) + "px";
-    cellElement.style.height = (newCellSize[1] * itemHeight) + "px";
-
-    grid.refreshItems().layout();
+        return fragment;
 }
 
 // Remove all items in the grid
@@ -543,8 +443,6 @@ function generateJSON() {
         }
         
         const configJSONObject = parseJSONString(configJSONString, column, row);
-        console.log('JSON NAME : ' + configJSONName);
-        console.log('JSON : ' + configJSONObject);
         configurations[configJSONName] = configJSONObject;
 
         const item = grid.getItems()[i];
