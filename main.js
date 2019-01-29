@@ -424,8 +424,8 @@ function generateJSON() {
         //New index in order to generate JSON with the new order of elements reflacted
         let newIndex = items[i].getAttribute('id');
 
-        const column = Math.floor(newIndex % numberOfColumns);
-        const row = Math.floor(newIndex / numberOfColumns);
+        const column = Math.floor(newIndex % numberOfColumns) + 1;
+        const row = Math.floor(newIndex / numberOfColumns) + 1;
         let selectedJob = getSelectedListElementValue(jobsListName, newIndex);
         let selectedWidget = getSelectedListElementValue(widgetsListName, newIndex);
 
@@ -508,7 +508,6 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
         html+= '<option value="' + itemName + '">' + itemName + '</option>';
     }
     html+= '</select>';
-
     html+= '<br />' ;
 
     return html;
