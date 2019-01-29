@@ -69,6 +69,7 @@ const resizeWidth = document.getElementById("resizeWidth");
 const resizeHeight = document.getElementById("resizeHeight");
 
 const gridElement = document.querySelector('.grid');
+const configJSONDisplayElement = document.getElementById('jsonLargeTextArea');
 
 const createButton = document.getElementById("createButton");
 const deleteButton = document.getElementById('deleteButton');
@@ -76,9 +77,6 @@ const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
 const resizeSelectedButton = document.getElementById('resizeSelectedButton');
-
-const itemWidth = 250;
-const itemHeight = 250;
 
 const itemTypesQueryString = '.item';
 
@@ -93,6 +91,10 @@ const dimensionNameHeight = 'height';
 
 //prevent grid items from dragging when select list is clicked
 let selectClicked = false;
+
+let baseItemWidth = 200;
+let baseItemHeight = 250;
+let baseGridSize = 800;
 
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid',
@@ -180,6 +182,9 @@ function createGridItems() {
     }
     
     grid.refreshItems().layout();
+
+
+
 }
 
 function resizeSelected() {
@@ -188,8 +193,8 @@ function resizeSelected() {
 
     for (i = 0; i < selectedElements.length; i++) {
         const element = selectedElements[i];
-        element.style.width = (width * itemWidth) + "px";
-        element.style.height = (height * itemHeight) + "px";
+        element.style.width = (width * baseItemWidth) + "px";
+        element.style.height = (height * baseItemHeight) + "px";
     }
 
     grid.refreshItems().layout();
@@ -224,8 +229,8 @@ function addItem(id, newCellSize = [1, 1]) {
 
     //Resize cell
     const cellElement = document.getElementById(id);
-    cellElement.style.width = (newCellSize[0] * itemWidth) + "px";
-    cellElement.style.height = (newCellSize[1] * itemHeight) + "px";
+    cellElement.style.width = (newCellSize[0] * baseItemWidth) + "px";
+    cellElement.style.height = (newCellSize[1] * baseItemHeight) + "px";
 
     grid.refreshItems().layout();
 }
@@ -286,6 +291,11 @@ function toggleSelectElement(event) {
                 // Element has not yet been selected
                 selectedElements.push(element);
                 event.target.className = 'item-content-selected';
+
+                //If available, display config value in side viewer
+                const index = element.getAttribute("id");
+                const configJSONString = getItemConfigText(index);
+                configJSONDisplayElement.value = configJSONString;
             }
         }
     })
@@ -329,6 +339,8 @@ function createGridFromJSON(jsonObject) {
     addWidgetsFromJSON(jsonObject);
 
     grid.refreshItems().layout();
+
+
 }
 
 function getMaxGridSize(widgetsJSONArray) {
@@ -349,7 +361,7 @@ function getMaxGridSize(widgetsJSONArray) {
 }
 
 function updateGridSize(numberOfColumns) {
-    gridElement.style.width = ((itemWidth + 10) * numberOfColumns) + "px";
+    gridElement.style.width = ((baseItemWidth + 10) * numberOfColumns) + "px";
 }
 
 function addWidgetsFromJSON(jsonObject) {
@@ -447,8 +459,8 @@ function generateJSON() {
 
         const item = grid.getItems()[i];
         
-        const blockWidth = Math.floor(item.getWidth() / itemWidth);
-        const blockHeight = Math.floor(item.getHeight() / itemHeight);
+        const blockWidth = Math.floor(item.getWidth() / baseItemWidth);
+        const blockHeight = Math.floor(item.getHeight() / baseItemHeight);
 
         const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONName);
         widgets.push(widgetObject);
@@ -595,6 +607,16 @@ function handleListEvent(event) {
       selectClicked = true;
     } else {
       selectClicked = false;
+    }
+}
+
+function configEditedListener(configJsonDisplayTextArea) {
+    const newConfigText = configJsonDisplayTextArea.value;
+    const lastSelectedCell = selectedElements[selectedElements.length - 1];
+    if (lastSelectedCell) {
+        const id = lastSelectedCell.getAttribute("id");
+        const configElement = document.getElementById(itemConfigTextName(id));
+        configElement.value = newConfigText;
     }
 }
 

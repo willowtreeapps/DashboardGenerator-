@@ -45,7 +45,16 @@
         <button id="resizeSelectedButton">Resize Selected</button>
     </div>
 
-    <div class="grid"></div>
+    <div class ="mainArea">
+        <div class="grid">
+            <!-- Grid gets generated here -->
+        </div>
+    
+        <div class="configDisplayArea">
+            <textarea id ="jsonLargeTextArea" oninput="configEditedListener(this)"></textarea>
+        </div>
+    </div>
+    
 
     <div class = "grouping" id = "mainActionSection">
         <button id="jsonButton">Generate JSON</button>
