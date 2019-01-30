@@ -114,6 +114,9 @@ const grid = new Muuri('.grid',
     dragSort: function () {
         return [grid];
     },
+    dragSortPredicate: {
+        action: 'swap'
+      },
     dragStartPredicate: function (item, e) {
         if (e.isFinal) {
             return Muuri.ItemDrag.defaultStartPredicate(item, e);
