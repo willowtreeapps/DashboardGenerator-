@@ -56,7 +56,7 @@ class Widget {
 ****************************************************** Global Variables *******************************************************************************
 *******************************************************************************************************************************************************************/
 
-let selectedElements = [];
+let selectedElement;
 let uuid = 0;
 
 const titleInput = document.getElementById("titleInput");
@@ -137,7 +137,7 @@ function setup() {
     titleVisibleToggle.addEventListener('click', toggleTitleVisibility);
     createButton.addEventListener('click', createGridItems);
     deleteButton.addEventListener('click', removeItems);
-    deleteSelectedButton.addEventListener('click', removeSelectedItems);
+    deleteSelectedButton.addEventListener('click', removeSelectedItem);
     jsonButton.addEventListener('click', generateJSON);
     document.addEventListener('click', toggleSelectElement);
     addButton.addEventListener('click', addCell);
@@ -194,10 +194,9 @@ function resizeSelected() {
     const width = Math.max(resizeWidth.value, 1);
     const height = Math.max(resizeHeight.value, 1);
 
-    for (i = 0; i < selectedElements.length; i++) {
-        const element = selectedElements[i];
-        element.style.width = (width * baseItemWidth) + "px";
-        element.style.height = (height * baseItemHeight) + "px";
+    if (selectedElement) {
+        selectedElement.style.width = (width * baseItemWidth) + "px";
+        selectedElement.style.height = (height * baseItemHeight) + "px";
     }
 
     grid.refreshItems().layout();
@@ -270,13 +269,11 @@ function removeItems() {
     })
 }
 
-//Remove all items within the selectedElements array. 
-function removeSelectedItems() {
-    grid.remove(selectedElements, {layout: false});
-    selectedElements.forEach(element => {
-        gridElement.removeChild(element);
-    })
-    selectedElements = [];
+//Remove all items within the selectedElement array. 
+function removeSelectedItem() {
+    grid.remove([selectedElement], {layout: false});
+    gridElement.removeChild(selectedElement);
+    selectedElement = null;
 }
 
 // Add selected item to array and show that it is selected
@@ -285,23 +282,34 @@ function toggleSelectElement(event) {
 
     items.forEach(element => {
         if (event.target === element.firstChild) {
-            if (selectedElements.includes(element)) {
+            if (selectedElement === element) {
                 // Element already selected
-                const index = selectedElements.indexOf(element);
-                selectedElements.splice(index, 1);
-                event.target.className = 'item-content-default';
-            } else {
-                // Element has not yet been selected
-                selectedElements.push(element);
-                event.target.className = 'item-content-selected';
+                deselectItem(element);
 
-                //If available, display config value in side viewer
-                const index = element.getAttribute("id");
-                const configJSONString = getItemConfigText(index);
-                configJSONDisplayElement.value = configJSONString;
+            } else {
+                selectItem(element);
             }
         }
     })
+}
+
+function deselectItem(element) {
+    element.firstChild.className = 'item-content-default';
+    selectedElement = null;
+    configJSONDisplayElement.value = '';
+}
+
+function selectItem(element) {
+    if (selectedElement && selectedElement != element) {
+        deselectItem(selectedElement)
+    }
+    element.firstChild.className = 'item-content-selected';
+    selectedElement = element;
+
+    //If available, display config value in side viewer
+    const index = element.getAttribute("id");
+    const configJSONString = getItemConfigText(index);
+    configJSONDisplayElement.value = configJSONString;
 }
 
 
@@ -615,9 +623,8 @@ function handleListEvent(event) {
 
 function configEditedListener(configJsonDisplayTextArea) {
     const newConfigText = configJsonDisplayTextArea.value;
-    const lastSelectedCell = selectedElements[selectedElements.length - 1];
-    if (lastSelectedCell) {
-        const id = lastSelectedCell.getAttribute("id");
+    if (selectedElement) {
+        const id = selectedElement.getAttribute("id");
         const configElement = document.getElementById(itemConfigTextName(id));
         configElement.value = newConfigText;
     }
