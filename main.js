@@ -89,6 +89,8 @@ const widgetsPlaceholderMessage = 'Select a Widget';
 const dimensionNameWidth = 'width';
 const dimensionNameHeight = 'height';
 
+const hiddenCellIDs = [];
+
 //prevent grid items from dragging when select list is clicked
 let selectClicked = false;
 
@@ -183,6 +185,8 @@ function createGridItems() {
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
         addItem(count);
     }
+
+    addExtraSpaceCells();
     
     grid.refreshItems().layout();
 
@@ -226,6 +230,8 @@ function addItem(id, newCellSize = [1, 1]) {
     cellElement.style.height = (newCellSize[1] * baseItemHeight) + "px";
 
     grid.refreshItems().layout();
+
+    return cellElement;
 }
 
 function generateItemDOMFragment(id) {
@@ -258,20 +264,38 @@ function removeItems() {
     items.forEach(item => {
         gridElement.removeChild(item);
     })
-
 }
 
 //Remove all items within the selectedElement array. 
 function removeSelectedItem() {
+    if (!isElementEmptyCell(selectedElement)) {
+        makeEmptyCell(selectedElement);
+        return;
+    }
     grid.remove([selectedElement], {layout: false});
     gridElement.removeChild(selectedElement);
     selectedElement = null;
 }
 
+function isIDEmptyCell(id) {
+    return hiddenCellIDs.indexOf(id) >= 0;
+}
+
+function isElementEmptyCell(element) {
+    const id = element.getAttribute("id");
+    const jobsElement = getSelectListElement(jobsListName, id);
+    return jobsElement.style.visibility === "hidden";
+}
+
+function makeEmptyCell(element) {
+    element.style.visibility = "hidden";
+    const id = element["id"];
+    hiddenCellIDs.push(id);
+}
+
 // Add selected item to array and show that it is selected
 function toggleSelectElement(event) {
     const items = document.querySelectorAll(itemTypesQueryString);
-
     items.forEach(element => {
         if (event.target === element.firstChild) {
             if (selectedElement === element) {
@@ -282,7 +306,7 @@ function toggleSelectElement(event) {
                 selectItem(element);
             }
         }
-    })
+    });
 }
 
 function deselectItem(element) {
@@ -341,9 +365,9 @@ function createGridFromJSON(jsonObject) {
 
     addWidgetsFromJSON(jsonObject);
 
+    addExtraSpaceCells();
+
     grid.refreshItems().layout();
-
-
 }
 
 function getMaxGridSize(widgetsJSONArray) {
@@ -418,6 +442,19 @@ function handleFiles(filesList) {
 ****************************************************** JSON Generation *******************************************************************************
 *******************************************************************************************************************************************************************/
 
+function getRowOfLastVisibleCell() {
+    const items = document.querySelectorAll(itemTypesQueryString);
+    const numberOfColumns = columnInput.value;
+    for(i = items.length - 1; i >= 0; i--) {
+        //New index in order to generate JSON with the new order of elements reflacted
+        let itemID = items[i].getAttribute('id');
+        if (isIDEmptyCell(itemID)) {
+            continue;
+        }
+        const row = Math.ceil(i / numberOfColumns);
+        return row;
+    }
+}
 
 // Build the GridData object and convert it to a JSON string
 function generateJSON() {
@@ -427,7 +464,7 @@ function generateJSON() {
     const titleVisible = isTitleVisible();
 
     const numberOfColumns = columnInput.value;
-    const numberOfRows = rowInput.value;
+    const numberOfRows = getRowOfLastVisibleCell();
 
     const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
     
@@ -437,12 +474,15 @@ function generateJSON() {
     
     for(i = 0; i < items.length; i++) {
         //New index in order to generate JSON with the new order of elements reflacted
-        let newIndex = items[i].getAttribute('id');
+        let itemID = items[i].getAttribute('id');
+        if (isIDEmptyCell(itemID)) {
+            continue;
+        }
 
-        const column = Math.floor(newIndex % numberOfColumns) + 1;
-        const row = Math.floor(newIndex / numberOfColumns) + 1;
-        let selectedJob = getSelectedListElementValue(jobsListName, newIndex);
-        let selectedWidget = getSelectedListElementValue(widgetsListName, newIndex);
+        const column = Math.floor(i % numberOfColumns) + 1;
+        const row = Math.floor(i / numberOfColumns) + 1;
+        let selectedJob = getSelectedListElementValue(jobsListName, itemID);
+        let selectedWidget = getSelectedListElementValue(widgetsListName, itemID);
 
         if (selectedJob === jobsPlaceholderMessage) {
             selectedJob = '';
@@ -451,8 +491,8 @@ function generateJSON() {
             selectedWidget = '';
         }
 
-        const configJSONName = selectedJob ? selectedJob + "_" + newIndex : "";
-        let configJSONString = getItemConfigText(newIndex);
+        const configJSONName = selectedJob ? (selectedJob + "_" + itemID) : "";
+        let configJSONString = getItemConfigText(itemID);
         if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
         }
@@ -469,8 +509,7 @@ function generateJSON() {
         widgets.push(widgetObject);
     }
 
-    const gridData = new GridData(
-        title, titleVisible, layout, widgets, configurations);
+    const gridData = new GridData(title, titleVisible, layout, widgets, configurations);
 
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
     showElement("saveSection");
@@ -568,7 +607,6 @@ function copyTextToClipboard() {
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-  
     try {
         const successful = document.execCommand('copy');
         const msg = successful ? 'successful' : 'unsuccessful';
@@ -576,13 +614,32 @@ function copyTextToClipboard() {
     } catch (err) {
         console.error('Fallback: Oops, unable to copy', err);
     }
-  
     document.body.removeChild(textArea);
   }
 
 /*******************************************************************************************************************************************************************
 ****************************************************** Helpers *******************************************************************************
 *******************************************************************************************************************************************************************/
+
+function addExtraSpaceCells() {
+    const numberOfColumns = columnInput.value;
+    for (let i = 0; i < numberOfColumns; i++) {
+        const newID = addCell();
+        makeEmptyCell(document.getElementById(newID));
+    }
+}
+
+function numberOfVisibleCells() {
+    let count = 0;
+    const items = grid.getItems();
+    for (let i = 0; i < items.length; i++) {
+        const element = items[i];
+        if (!isElementEmptyCell(element)) {
+            count++;
+        }
+    }
+    return count;
+}
 
 //Helper function to see what the accessible properties of an object are
 function printObjectProperties(object) {
