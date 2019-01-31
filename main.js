@@ -202,16 +202,9 @@ function resizeSelected() {
 
 // Add a 1x1 cell to the grid if the maximum number of items has not been reached
 function addCell() {
-    const numberOfColumns = columnInput.value;
-    const numberOfRows = rowInput.value;
-
-    const totalCellsNum = grid.getItems().length;
-    if (totalCellsNum >= (numberOfRows * numberOfColumns)) {
-        //Only allow user to add up to the max amount of cells.
-        return;
-    }
     const newID = ++uuid;
     addItem(newID);
+    return newID;
 }
 
 // Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
