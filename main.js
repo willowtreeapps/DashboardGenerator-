@@ -186,8 +186,6 @@ function createGridItems() {
     
     grid.refreshItems().layout();
 
-
-
 }
 
 function resizeSelected() {
@@ -267,6 +265,7 @@ function removeItems() {
     items.forEach(item => {
         gridElement.removeChild(item);
     })
+
 }
 
 //Remove all items within the selectedElement array. 
@@ -459,7 +458,7 @@ function generateJSON() {
             selectedWidget = '';
         }
 
-        const configJSONName = selectedJob;
+        const configJSONName = selectedJob ? selectedJob + "_" + newIndex : "";
         let configJSONString = getItemConfigText(newIndex);
         if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
@@ -619,6 +618,7 @@ function handleListEvent(event) {
     } else {
       selectClicked = false;
     }
+
 }
 
 function configEditedListener(configJsonDisplayTextArea) {
@@ -642,7 +642,9 @@ function handleListChangeEvent(selectElement, id) {
         }
     }
 
-    const configTemplate = getTemplateForOption(selectedValue);
+    const currentlySelectedWidgetValue = getSelectListElement(widgetsListName, id).value;
+
+    const configTemplate = getTemplateForOption(currentlySelectedWidgetValue);
     
     const configElement = document.getElementById(itemConfigTextName(id));
     configElement.value = configTemplate;
@@ -737,7 +739,7 @@ function cellDimensionFieldName(itemID, dimensionName) {
 function getTemplateForOption(selectedValue) {
     const configTemplate = configTemplatesDict[selectedValue];
     if (!configTemplate) {
-        return '';
+        return '{}';
     }
     return configTemplate;
 }
