@@ -811,7 +811,10 @@ const configTemplatesDict = {
     'environment-commit-status' : '',
     'google-drive' : '',
     'isitup' : '',
-    'onelogin-locked-accounts' : '',
+    'onelogin-locked-accounts' : `{
+	"interval": 120000,
+	"authName": "onelogin"
+}`,
     'pending-pr-count' : '',
     'picture-of-the-day' : '',
     'security-monkey' : '',
@@ -902,7 +905,7 @@ const jobsList =
 'sentinel-one',
 'sprint-goals',
 'sprinthealth-history',
-'teamcity-build-queue',
+'teamcity_queuestatus',
 'teamcity-build-status',
 'teamcity-test-trend',
 'test-results',
