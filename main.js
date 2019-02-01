@@ -356,20 +356,33 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const widget = widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
-        const key = widgetCol + "_" + widgetRow;
+        const widgetWidth = widget.width;
+        const widgetHeight = widget.height;
+        let key = widgetCol + "_" + widgetRow;
         widgetsDictionary[key] = widget;
+        for (let widthCount = 1; widthCount < widgetWidth; widthCount++) {
+            for (let heightCount = 1; heightCount < widgetHeight; heightCount++) {
+                key = (widgetCol + widthCount) + "_" + (widgetRow + heightCount);
+                console.log("KEY : " + key);
+                widgetsDictionary[key] = widget;
+            }
+        }
     }
 
+    const existingWidgets = [];
     for (let i = 0; i < (numberOfColumns * numberOfRows); i++) {
         const column = Math.floor(i % numberOfColumns) + 1;
         const row = Math.floor(i / numberOfColumns) + 1;
         const key = column + "_" + row;
         const widget = widgetsDictionary[key];
-        if (!widget) {
+        if (!widget || existingWidgets.indexOf(widget) >= 0) {
+            //no widget found for this part of the grid, add an empty cell instead
             const id = addCell();
             makeHiddenCell(document.getElementById(id));
             continue;
         }
+        existingWidgets.push(widget);
+        console.log("PUTTING KEY : " + key);
 
         const widgetWidth = widget.width;
         const widgetHeight = widget.height;
@@ -565,8 +578,8 @@ function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
     let html = '<textarea id="' + textFieldName + '" type="text" style="resize:none;">' + 
     '</textarea>';
-    html+= '<br>' ;
-    html+= '<br>' ;
+    html+= '<br>';
+    html+= '<br>';
     return html;
 }
 
@@ -651,6 +664,8 @@ function makeHiddenCell(element) {
     hiddenCellIDs.push(id);
 }
 
+//adds the extra space cells that allows the user to move smaller cells into "empty" spaces.
+//in reality it is just swapping with an invisible cell
 function addExtraSpaceCells() {
     const numberOfColumns = columnInput.value;
     for (let i = 0; i < numberOfColumns; i++) {
