@@ -313,7 +313,7 @@ function createGridFromJSON(jsonObject) {
 
     clearGrid();
 
-    addWidgetsFromJSON(jsonObject);
+    addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows);
 
     addExtraSpaceCells();
 
@@ -344,16 +344,33 @@ function updateGridSize(numberOfColumns) {
     gridElement.style.height = ((baseItemWidth + margin) * (grid.getItems.length / numberOfColumns)) + "px";
 }
 
-function addWidgetsFromJSON(jsonObject) {
+function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
     const configurations = jsonObject.config;
     let widgets = jsonObject.widgets;
     if (!widgets) {
         widgets = jsonObject.layout.widgets;
     }
+
+    let widgetsDictionary = {};
     for (count = 0; count < widgets.length; count++) {
         const widget = widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
+        const key = widgetCol + "_" + widgetRow;
+        widgetsDictionary[key] = widget;
+    }
+
+    for (let i = 0; i < (numberOfColumns * numberOfRows); i++) {
+        const column = Math.floor(i % numberOfColumns) + 1;
+        const row = Math.floor(i / numberOfColumns) + 1;
+        const key = column + "_" + row;
+        const widget = widgetsDictionary[key];
+        if (!widget) {
+            const id = addCell();
+            makeHiddenCell(document.getElementById(id));
+            continue;
+        }
+
         const widgetWidth = widget.width;
         const widgetHeight = widget.height;
         const widgetJob = widget.job;
@@ -363,15 +380,15 @@ function addWidgetsFromJSON(jsonObject) {
         const newCellSize = [widgetWidth, widgetHeight];
         addCell(newCellSize);
 
-        let selectedJob = getSelectListElement(jobsListName, count);
-        let selectedWidget = getSelectListElement(widgetsListName, count);
+        let selectedJob = getSelectListElement(jobsListName, i);
+        let selectedWidget = getSelectListElement(widgetsListName, i);
 
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
         if (widgetConfig) {
             const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
-            const configElement = document.getElementById(itemConfigTextName(count));
+            const configElement = document.getElementById(itemConfigTextName(i));
             if (configValue) {
                 configElement.value = configValue;
             }
