@@ -3,7 +3,6 @@
 ****************************************************** Models *******************************************************************************
 *******************************************************************************************************************************************************************/
 
-
 class GridData {
     constructor(title, titleVisible, layout, widgets, config) {
         this.title = title;
@@ -56,8 +55,30 @@ class Widget {
 ****************************************************** Global Variables *******************************************************************************
 *******************************************************************************************************************************************************************/
 
-let selectedElement;
 let uuid = 0;
+let selectedElement;
+
+//used to prevent hidden cells from being included in the generated json
+let hiddenCellIDs = [];
+
+//prevent grid items from dragging when select list is clicked
+let selectClicked = false;
+
+//sizes changed depending on size of the page and number of columns in the grid
+let baseItemWidth = 200;
+let baseItemHeight = 250;
+let baseGridSize = 800;
+
+const itemTypesQueryString = '.item';
+
+const jobsListName = 'jobs';
+const widgetsListName = 'widgets';
+
+const jobsPlaceholderMessage = 'Select a Job';
+const widgetsPlaceholderMessage = 'Select a Widget';
+
+const dimensionNameWidth = 'width';
+const dimensionNameHeight = 'height';
 
 const titleInput = document.getElementById("titleInput");
 const titleVisibleToggle = document.getElementById("titleVisibleToggle");
@@ -77,26 +98,6 @@ const deleteSelectedButton = document.getElementById('deleteSelectedButton');
 const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
 const resizeSelectedButton = document.getElementById('resizeSelectedButton');
-
-const itemTypesQueryString = '.item';
-
-const jobsListName = 'jobs';
-const widgetsListName = 'widgets';
-
-const jobsPlaceholderMessage = 'Select a Job';
-const widgetsPlaceholderMessage = 'Select a Widget';
-
-const dimensionNameWidth = 'width';
-const dimensionNameHeight = 'height';
-
-const hiddenCellIDs = [];
-
-//prevent grid items from dragging when select list is clicked
-let selectClicked = false;
-
-let baseItemWidth = 200;
-let baseItemHeight = 250;
-let baseGridSize = 800;
 
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid',
@@ -118,13 +119,13 @@ const grid = new Muuri('.grid',
     },
     dragSortPredicate: {
         action: 'swap'
-      },
+    },
     dragStartPredicate: function (item, e) {
         if (e.isFinal) {
             return Muuri.ItemDrag.defaultStartPredicate(item, e);
         }
         return !selectClicked;
-      }
+    }
 });
 
 setup();
@@ -136,14 +137,14 @@ function setup() {
     resizeWidth.placeholder = "resize width";
     resizeHeight.placeholder = "resize height";
 
-    titleVisibleToggle.addEventListener('click', toggleTitleVisibility);
-    createButton.addEventListener('click', createGridItems);
-    deleteButton.addEventListener('click', removeItems);
-    deleteSelectedButton.addEventListener('click', removeSelectedItem);
+    titleVisibleToggle.addEventListener('click', didToggleTitleVisibility);
+    createButton.addEventListener('click', didTapCreateGridItems);
+    deleteButton.addEventListener('click', clearGrid);
+    deleteSelectedButton.addEventListener('click', removeSelectedCell);
     jsonButton.addEventListener('click', generateJSON);
-    document.addEventListener('click', toggleSelectElement);
+    document.addEventListener('click', didTapCell);
     addButton.addEventListener('click', addCell);
-    resizeSelectedButton.addEventListener('click', resizeSelected);
+    resizeSelectedButton.addEventListener('click', didTapResizeSelectedCell);
 
     hideElement("saveSection");
 
@@ -154,10 +155,8 @@ function setup() {
 ****************************************************** Action Methods *******************************************************************************
 *******************************************************************************************************************************************************************/
 
-
-
-// Toggle to change title visibility
-function toggleTitleVisibility() {
+// Toggles the title visibility value that should be in the generated JSON value
+function didToggleTitleVisibility() {
     if (titleVisibleToggle.textContent === "Set Visible") {
         setTitleInvisible();
     } else {
@@ -165,17 +164,9 @@ function toggleTitleVisibility() {
     }
 }
 
-function setTitleVisible() {
-    titleVisibleToggle.textContent = "Set Visible";
-}
-
-function setTitleInvisible() {
-    titleVisibleToggle.textContent = "Set Hidden";
-}
-
 // Creates a grid from the inputed column and rows
-function createGridItems() {
-    removeItems();
+function didTapCreateGridItems() {
+    clearGrid();
 
     const numberOfColumns = columnInput.value;
     const numberOfRows = rowInput.value;
@@ -183,16 +174,16 @@ function createGridItems() {
     updateGridSize(numberOfColumns);
 
     for (count = 0; count < (numberOfRows * numberOfColumns); count++) {
-        addItem(count);
+        addCell();
     }
 
     addExtraSpaceCells();
     
     grid.refreshItems().layout();
-
 }
 
-function resizeSelected() {
+// Resizes selected cell
+function didTapResizeSelectedCell() {
     const width = Math.max(resizeWidth.value, 1);
     const height = Math.max(resizeHeight.value, 1);
 
@@ -204,72 +195,48 @@ function resizeSelected() {
     grid.refreshItems().layout();
 }
 
-// Add a 1x1 cell to the grid if the maximum number of items has not been reached
-function addCell() {
-    const newID = ++uuid;
-    addItem(newID);
-    return newID;
-}
-
-// Add a grid item to DOM. itemType is used to determine if it should be 2 blocks wide or 2 blocks long
-function addItem(id, newCellSize = [1, 1]) {
-    const fragment = generateItemDOMFragment(id);
+// Add a 1x1 cell to the grid 
+function addCell(newCellSize = [1, 1]) {
+    const newID = uuid;
+    uuid++;
+    
+    const fragment = generateItemDOMFragment(newID);
     grid.add(fragment.firstChild);
-    document.body.insertBefore(fragment, document.body.childNodes[id]);
+    document.body.insertBefore(fragment, document.body.childNodes[newID]);
 
     //Set Config Placeholder
-    const configElement = document.getElementById(itemConfigTextName(id));
+    const configElement = document.getElementById(itemConfigTextName(newID));
     configElement.placeholder = "config name";
 
     grid.refreshItems().layout();
-    ++uuid;
 
-    //Resize cell
-    const cellElement = document.getElementById(id);
+    //Resize cell to specified cell size
+    const cellElement = document.getElementById(newID);
     cellElement.style.width = (newCellSize[0] * baseItemWidth) + "px";
     cellElement.style.height = (newCellSize[1] * baseItemHeight) + "px";
 
     grid.refreshItems().layout();
 
-    return cellElement;
-}
-
-function generateItemDOMFragment(id) {
-    let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
-    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
-    let configTextField = createConfigTextField(id);
-    let widthField = createDimensionField(id, dimensionNameWidth);
-    let heightField = createDimensionField(id, dimensionNameHeight);
-    const fragment = createDOMFragment(
-        '<div class="item" id="' + id +
-         '">' + 
-            '<div class="item-content-default"' +
-            '" onmousedown="return handleListEvent(event)"' + 
-             ' >' + 
-            (id + 1) + 
-                '<div class="dropdown_lists">' + 
-                    jobsDropDownHtml + 
-                    widgetsDropDownList + 
-                    configTextField +
-                '</div>' + 
-            '</div>' + 
-        '</div>');
-        return fragment;
+    return newID;
 }
 
 // Remove all items in the grid
-function removeItems() {
+function clearGrid() {
     const items = document.querySelectorAll(itemTypesQueryString);
     grid.remove(items);
     items.forEach(item => {
         gridElement.removeChild(item);
     })
+
+    uuid = 0;
+    hiddenCellIDs = [];
+    selectedElement = null;
 }
 
-//Remove all items within the selectedElement array. 
-function removeSelectedItem() {
-    if (!isElementEmptyCell(selectedElement)) {
-        makeEmptyCell(selectedElement);
+//Removes the selected cell. If the selected cell is already an 
+function removeSelectedCell() {
+    if (!isHiddenCell(selectedElement)) {
+        makeHiddenCell(selectedElement);
         return;
     }
     grid.remove([selectedElement], {layout: false});
@@ -277,47 +244,30 @@ function removeSelectedItem() {
     selectedElement = null;
 }
 
-function isIDEmptyCell(id) {
-    return hiddenCellIDs.indexOf(id) >= 0;
-}
-
-function isElementEmptyCell(element) {
-    const id = element.getAttribute("id");
-    const jobsElement = getSelectListElement(jobsListName, id);
-    return jobsElement.style.visibility === "hidden";
-}
-
-function makeEmptyCell(element) {
-    element.style.visibility = "hidden";
-    const id = element["id"];
-    hiddenCellIDs.push(id);
-}
-
-// Add selected item to array and show that it is selected
-function toggleSelectElement(event) {
+//Select or Deselect cell
+function didTapCell(event) {
     const items = document.querySelectorAll(itemTypesQueryString);
     items.forEach(element => {
         if (event.target === element.firstChild) {
             if (selectedElement === element) {
                 // Element already selected
-                deselectItem(element);
-
+                deselectCell(element);
             } else {
-                selectItem(element);
+                selectCell(element);
             }
         }
     });
 }
 
-function deselectItem(element) {
+function deselectCell(element) {
     element.firstChild.className = 'item-content-default';
     selectedElement = null;
     configJSONDisplayElement.value = '';
 }
 
-function selectItem(element) {
+function selectCell(element) {
     if (selectedElement && selectedElement != element) {
-        deselectItem(selectedElement)
+        deselectCell(selectedElement)
     }
     element.firstChild.className = 'item-content-selected';
     selectedElement = element;
@@ -361,7 +311,7 @@ function createGridFromJSON(jsonObject) {
     columnInput.value = numberOfColumns;
     rowInput.value = numberOfRows;
 
-    removeItems();
+    clearGrid();
 
     addWidgetsFromJSON(jsonObject);
 
@@ -370,6 +320,7 @@ function createGridFromJSON(jsonObject) {
     grid.refreshItems().layout();
 }
 
+//Goes through the widget passed in and infers the size of the grid from it
 function getMaxGridSize(widgetsJSONArray) {
     let maxCol = 3;
     let maxRow = 3;
@@ -388,7 +339,9 @@ function getMaxGridSize(widgetsJSONArray) {
 }
 
 function updateGridSize(numberOfColumns) {
-    gridElement.style.width = ((baseItemWidth + 10) * numberOfColumns) + "px";
+    const margin = 10;
+    gridElement.style.width = ((baseItemWidth + margin) * numberOfColumns) + "px";
+    gridElement.style.height = ((baseItemWidth + margin) * (grid.getItems.length / numberOfColumns)) + "px";
 }
 
 function addWidgetsFromJSON(jsonObject) {
@@ -408,7 +361,7 @@ function addWidgetsFromJSON(jsonObject) {
         const widgetConfig = widget.config;
 
         const newCellSize = [widgetWidth, widgetHeight];
-        addItem(count, newCellSize);
+        addCell(newCellSize);
 
         let selectedJob = getSelectListElement(jobsListName, count);
         let selectedWidget = getSelectListElement(widgetsListName, count);
@@ -442,6 +395,7 @@ function handleFiles(filesList) {
 ****************************************************** JSON Generation *******************************************************************************
 *******************************************************************************************************************************************************************/
 
+//Used to be able to get the number of rows a grid should have when generating the JSON
 function getRowOfLastVisibleCell() {
     const items = document.querySelectorAll(itemTypesQueryString);
     const numberOfColumns = columnInput.value;
@@ -549,6 +503,27 @@ function parseJSONString(jsonString, column, row) {
 ****************************************************** HTML Generation *******************************************************************************
 *******************************************************************************************************************************************************************/
 
+//Generates the HTML for a cell in the grid
+function generateItemDOMFragment(id) {
+    let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
+    let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
+    let configTextField = createConfigTextField(id);
+    const fragment = createDOMFragment(
+        '<div class="item" id="' + id +
+         '">' + 
+            '<div class="item-content-default"' +
+            '" onmousedown="return handleListEvent(event)"' + 
+             ' >' + 
+            (id + 1) + 
+                '<div class="dropdown_lists">' + 
+                    jobsDropDownHtml + 
+                    widgetsDropDownList + 
+                    configTextField +
+                '</div>' + 
+            '</div>' + 
+        '</div>');
+    return fragment;
+}
 
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
@@ -574,12 +549,6 @@ function createConfigTextField(itemID) {
     '</textarea>';
     html+= '<br>' ;
     html+= '<br>' ;
-    return html;
-}
-
-function createDimensionField(itemID, dimensionName) {
-    let dimensionFieldName = cellDimensionFieldName(itemID, dimensionName);
-    let html = '<input name="' + dimensionFieldName + '" type="text">';
     return html;
 }
 
@@ -621,24 +590,52 @@ function copyTextToClipboard() {
 ****************************************************** Helpers *******************************************************************************
 *******************************************************************************************************************************************************************/
 
+function isTitleVisible() {
+    return titleVisibleToggle.textContent === "Set Hidden"
+}
+
+function setTitleVisible() {
+    titleVisibleToggle.textContent = "Set Visible";
+}
+
+function setTitleInvisible() {
+    titleVisibleToggle.textContent = "Set Hidden";
+}
+
+function isIDEmptyCell(id) {
+    return hiddenCellIDs.indexOf(id) >= 0;
+}
+
+function isHiddenCell(element) {
+    const id = element.getAttribute("id");
+    const jobsElement = getSelectListElement(jobsListName, id);
+    return jobsElement.style.visibility === "hidden";
+}
+
+//Makes an element visible
+function showElement(elementIDString) {
+    const element = document.getElementById(elementIDString);
+    element.style.visibility = "visible";
+}
+
+//Makes an element invisible
+function hideElement(elementIDString) {
+    const element = document.getElementById(elementIDString);
+    element.style.visibility = "hidden";
+}
+
+function makeHiddenCell(element) {
+    element.style.visibility = "hidden";
+    const id = element["id"];
+    hiddenCellIDs.push(id);
+}
+
 function addExtraSpaceCells() {
     const numberOfColumns = columnInput.value;
     for (let i = 0; i < numberOfColumns; i++) {
         const newID = addCell();
-        makeEmptyCell(document.getElementById(newID));
+        makeHiddenCell(document.getElementById(newID));
     }
-}
-
-function numberOfVisibleCells() {
-    let count = 0;
-    const items = grid.getItems();
-    for (let i = 0; i < items.length; i++) {
-        const element = items[i];
-        if (!isElementEmptyCell(element)) {
-            count++;
-        }
-    }
-    return count;
 }
 
 //Helper function to see what the accessible properties of an object are
@@ -671,6 +668,7 @@ function handleListEvent(event) {
 
 }
 
+//Listener used to change the config values in each cell as its being edited in the JSON side view.
 function configEditedListener(configJsonDisplayTextArea) {
     const newConfigText = configJsonDisplayTextArea.value;
     if (selectedElement) {
@@ -720,22 +718,6 @@ function checkBowserSupportsFilesAPI() {
     }
 }
 
-function isTitleVisible() {
-    return titleVisibleToggle.textContent === "Set Hidden"
-}
-
-//Makes an element visible
-function showElement(elementIDString) {
-    const element = document.getElementById(elementIDString);
-    element.style.visibility = "visible";
-}
-
-//Makes an element invisible
-function hideElement(elementIDString) {
-    const element = document.getElementById(elementIDString);
-    element.style.visibility = "hidden";
-}
-
 //Gets the selected value of a select HTML list
 function getSelectedListElementValue(listName, itemID) {
     const listElement = getSelectListElement(listName, itemID);
@@ -757,15 +739,6 @@ function getItemConfigText(itemID) {
     return configName.trim();
 }
 
-function isJSONEmpty(obj) {
-    for(var key in obj) {
-        if(obj.hasOwnProperty(key)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 //Helper to determine what the name of a select HTML list element is for a given grid item id
 function itemSelectListName(baseListName, itemID) {
     const name = baseListName + '_' + itemID;
@@ -775,10 +748,6 @@ function itemSelectListName(baseListName, itemID) {
 //Helper to determine what the name of a config HTML textbox is for a given grid item id
 function itemConfigTextName(itemID) {
     return 'config_' + itemID;
-}
-
-function cellDimensionFieldName(itemID, dimensionName) {
-    return 'dimension_' + dimensionName + '_' + itemID;
 }
 
 /*******************************************************************************************************************************************************************
