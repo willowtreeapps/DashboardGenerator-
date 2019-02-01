@@ -591,15 +591,18 @@ function copyTextToClipboard() {
 *******************************************************************************************************************************************************************/
 
 function isTitleVisible() {
+    //Title is visible if you can hide it
     return titleVisibleToggle.textContent === "Set Hidden"
 }
 
 function setTitleVisible() {
-    titleVisibleToggle.textContent = "Set Visible";
+    //Title is visible if you can hide it
+    titleVisibleToggle.textContent = "Set Hidden";
 }
 
 function setTitleInvisible() {
-    titleVisibleToggle.textContent = "Set Hidden";
+    //Title is hidden if you can show it
+    titleVisibleToggle.textContent = "Set Visible";
 }
 
 function isIDEmptyCell(id) {
