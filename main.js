@@ -482,6 +482,7 @@ function generateJSON() {
 
     const gridData = new GridData(title, titleVisible, layout, widgets, configurations);
 
+    //TODO: - Limit the width on the generated JSON so horizontal scrolling doesn't get enabled if it's too long
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
     showElement("saveSection");
 }
@@ -562,7 +563,7 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = '<textarea id="' + textFieldName + '" type="text">' + 
+    let html = '<textarea id="' + textFieldName + '" type="text" style="resize:none;">' + 
     '</textarea>';
     html+= '<br>' ;
     html+= '<br>' ;
