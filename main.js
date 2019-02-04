@@ -351,12 +351,44 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         widgets = jsonObject.layout.widgets;
     }
 
-    //TODO does thi preserve empty cells within the grid?
-
+    let widgetsDictionary = {};
     for (count = 0; count < widgets.length; count++) {
         const widget = widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
+        const widgetWidth = widget.width;
+        const widgetHeight = widget.height;
+        let key = widgetCol + "_" + widgetRow;
+        // console.log("REGULAR KEY : " + key);
+        widgetsDictionary[key] = widget;
+        for (let widthCount = 0; widthCount < widgetWidth; widthCount++) {
+            for (let heightCount = 0; heightCount < widgetHeight; heightCount++) {
+                key = (widgetCol + widthCount) + "_" + (widgetRow + heightCount);
+                // console.log("EXTENDED KEY : " + key);
+                widgetsDictionary[key] = widget;
+            }
+        }
+    }
+
+    const existingWidgets = [];
+    for (let i = 0; i < (numberOfColumns * numberOfRows); i++) {
+        const column = Math.floor(i % numberOfColumns) + 1;
+        const row = Math.floor(i / numberOfColumns) + 1;
+        const key = column + "_" + row;
+        const widget = widgetsDictionary[key];
+        if (!widget || existingWidgets.indexOf(widget) >= 0) {
+            //no widget found for this part of the grid, add an empty cell instead
+            if (!widget && existingWidgets.indexOf(widget) < 0) {
+                const id = addCell();
+                makeHiddenCell(document.getElementById(id));
+                // console.log("HIDDEN KEY : " + key);
+            } else {
+                // console.log("LENGTH KEY : " + key);
+            }
+            continue;
+        }
+        existingWidgets.push(widget);
+        // console.log("PUTTING KEY : " + key);
 
         const widgetWidth = widget.width;
         const widgetHeight = widget.height;
@@ -365,17 +397,17 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const widgetConfig = widget.config;
 
         const newCellSize = [widgetWidth, widgetHeight];
-        addCell(newCellSize);
+        const widgetID = addCell(newCellSize);
 
-        let selectedJob = getSelectListElement(jobsListName, count);
-        let selectedWidget = getSelectListElement(widgetsListName, count);
+        let selectedJob = getSelectListElement(jobsListName, widgetID);
+        let selectedWidget = getSelectListElement(widgetsListName, widgetID);
 
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
         if (widgetConfig) {
             const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
-            const configElement = document.getElementById(itemConfigTextName(count));
+            const configElement = document.getElementById(itemConfigTextName(widgetID));
             if (configValue) {
                 configElement.value = configValue;
             }
