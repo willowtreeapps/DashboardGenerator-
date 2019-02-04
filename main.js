@@ -351,38 +351,12 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         widgets = jsonObject.layout.widgets;
     }
 
-    let widgetsDictionary = {};
+    //TODO does thi preserve empty cells within the grid?
+
     for (count = 0; count < widgets.length; count++) {
         const widget = widgets[count];
         const widgetCol = widget.col;
         const widgetRow = widget.row;
-        const widgetWidth = widget.width;
-        const widgetHeight = widget.height;
-        let key = widgetCol + "_" + widgetRow;
-        widgetsDictionary[key] = widget;
-        for (let widthCount = 1; widthCount < widgetWidth; widthCount++) {
-            for (let heightCount = 1; heightCount < widgetHeight; heightCount++) {
-                key = (widgetCol + widthCount) + "_" + (widgetRow + heightCount);
-                console.log("KEY : " + key);
-                widgetsDictionary[key] = widget;
-            }
-        }
-    }
-
-    const existingWidgets = [];
-    for (let i = 0; i < (numberOfColumns * numberOfRows); i++) {
-        const column = Math.floor(i % numberOfColumns) + 1;
-        const row = Math.floor(i / numberOfColumns) + 1;
-        const key = column + "_" + row;
-        const widget = widgetsDictionary[key];
-        if (!widget || existingWidgets.indexOf(widget) >= 0) {
-            //no widget found for this part of the grid, add an empty cell instead
-            const id = addCell();
-            makeHiddenCell(document.getElementById(id));
-            continue;
-        }
-        existingWidgets.push(widget);
-        console.log("PUTTING KEY : " + key);
 
         const widgetWidth = widget.width;
         const widgetHeight = widget.height;
@@ -393,15 +367,15 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const newCellSize = [widgetWidth, widgetHeight];
         addCell(newCellSize);
 
-        let selectedJob = getSelectListElement(jobsListName, i);
-        let selectedWidget = getSelectListElement(widgetsListName, i);
+        let selectedJob = getSelectListElement(jobsListName, count);
+        let selectedWidget = getSelectListElement(widgetsListName, count);
 
         selectedJob.value = widgetJob;
         selectedWidget.value = widgetWidget;
 
         if (widgetConfig) {
             const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
-            const configElement = document.getElementById(itemConfigTextName(i));
+            const configElement = document.getElementById(itemConfigTextName(count));
             if (configValue) {
                 configElement.value = configValue;
             }
