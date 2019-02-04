@@ -474,11 +474,9 @@ function generateJSON() {
         let selectedJob = getSelectedListElementValue(jobsListName, itemID);
         let selectedWidget = getSelectedListElementValue(widgetsListName, itemID);
 
-        if (selectedJob === jobsPlaceholderMessage) {
-            selectedJob = '';
-        }
-        if (selectedWidget === widgetsPlaceholderMessage) {
-            selectedWidget = '';
+        if (!selectedJob || !selectedWidget || selectedJob === jobsPlaceholderMessage || selectedWidget === widgetsPlaceholderMessage) {
+            //Require that a job and a widget be selected to include this cell as part of the generated JSON
+            continue;
         }
 
         const configJSONName = selectedJob ? (selectedJob + "_" + itemID) : "";
@@ -621,7 +619,7 @@ function copyTextToClipboard() {
         console.error('Fallback: Oops, unable to copy', err);
     }
     document.body.removeChild(textArea);
-  }
+}
 
 /*******************************************************************************************************************************************************************
 ****************************************************** Helpers *******************************************************************************
