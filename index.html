@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet"href="grid.css" type="text/css" media="screen">
+    <link rel="stylesheet"href="styles/grid.css" type="text/css" media="screen">
     <style>
             html { background: 	#202020; }
         </style>
@@ -26,50 +26,50 @@
 </header>
 <body>
 
-    <div class = "grouping" id = "uploadSection">
+    <div class="grouping" id="upload-section">
         <input type="file" id="input" onchange="handleFiles(this.files)">
     </div>
 
-    <div class = "grouping" id = "titleSection">
-        <input id="titleInput" type="text">
-        <button id="titleVisibleToggle">Set Hidden</button>
+    <div class="grouping" id="title-section">
+        <input id="title-input" type="text">
+        <button id="title-visible-toggle">Set Hidden</button>
     </div>
 
-    <div class = "grouping" id = "createSection">
-        <input id="columnInput" type="text">
-        <input id="rowInput" type="text">
-        <button id="createButton">Create</button>
-        <button id="addButton">Add Cell</button>
-        <button id="deleteButton">Delete All</button>
-        <button id="deleteSelectedButton">Delete Selected</button>
+    <div class="grouping" id="create-section">
+        <input id="column-input" type="text">
+        <input id="row-input" type="text">
+        <button id="create-button">Create</button>
+        <button id="add-button">Add Cell</button>
+        <button id="delete-button">Delete All</button>
+        <button id="delete-selected-button">Delete Selected</button>
         <br />
-        <input id="resizeWidth" type="text">
-        <input id="resizeHeight" type="text">
-        <button id="resizeSelectedButton">Resize Selected</button>
+        <input id="resize-width" type="text">
+        <input id="resize-height" type="text">
+        <button id="resize-selected-button">Resize Selected</button>
     </div>
 
-    <div class ="mainArea">
+    <div class ="main-area">
         <div class="grid">
             <!-- Grid gets generated here -->
         </div>
     
-        <div class="configDisplayArea">
-            <textarea id ="jsonLargeTextArea" oninput="configEditedListener(this)"></textarea>
+        <textarea class="undraggable" id ="json-large-text-area" oninput="configEditedListener(this)"></textarea>
+            
         </div>
     </div>
     
 
-    <div class = "grouping" id = "mainActionSection">
-        <button id="jsonButton">Generate JSON</button>
-        <p id="jsonGenerationMessage"></p>
+    <div class="grouping" id="main-action-section">
+        <button id="json-button">Generate JSON</button>
+        <p id="json-generation-message"></p>
     </div>
 
-    <div class = "grouping" id = "jsonSection">
+    <div class="grouping" id="json-section">
         <pre class="text" id="json"></pre>
     </div>
 
 
-    <div class = "grouping" id = "saveSection">
+    <div class="grouping" id="save-section">
         <!-- The button used to copy the text -->
         <button onclick="copyTextToClipboard()">Copy text</button>
     </div>

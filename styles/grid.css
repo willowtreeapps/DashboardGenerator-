@@ -1,0 +1,105 @@
+.grid {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.item {
+display: block;
+position: absolute;
+width: 200px;
+height: 250px;
+margin: 2px;
+z-index: 1;
+}
+
+#json-large-text-area {
+display: block;
+position: fixed;
+width: 30%;
+height: 95%;
+margin: 2px;
+z-index: 10;
+top: 20px;
+right:0px;
+}
+
+.item.muuri-item-hidden {
+z-index: 0;
+}
+
+.item.muuri-item-positioning {
+z-index: 2;
+}
+
+.item.muuri-item-releasing {
+z-index: 3;
+}
+
+.item.muuri-item-dragging {
+z-index: 4;
+}
+
+.item-content-default {
+position: relative;
+width: 100%;
+height: 100%;
+text-align: center;
+background: #171717;
+font-size: 50px;
+color:	#5F5F5F;
+cursor: pointer;
+}
+
+.item-content-selected {
+position: relative;
+width: 100%;
+height: 100%;
+text-align: center;
+background:red;
+font-size: 50px;
+color:	#5F5F5F;
+cursor: pointer;
+}
+
+.item.muuri-item-dragging .item-content {
+background:rgb(255, 255, 255) ; opacity: 0.5;
+}
+
+.item.muuri-item-releasing .item-content {
+background:rgb(255, 255, 255) ; opacity: 0.5;
+}
+
+.edit-widget-button {
+  width: 200px;
+  height: 30px;
+  border-radius: 5px;
+}
+
+.text {
+color: white;
+}
+
+.grouping {
+margin-bottom: 15px;
+}
+
+#main-action-section {
+text-align: center;
+margin-top: 50px;
+}
+
+#json-button {
+background-color: 	rgb(0,128,128);
+color: white;
+position: relative;
+top: 50%
+}
+
+#create-button {
+background-color: green;
+color: white;
+}
+
+
+

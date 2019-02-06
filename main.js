@@ -80,24 +80,26 @@ const widgetsPlaceholderMessage = 'Select a Widget';
 const dimensionNameWidth = 'width';
 const dimensionNameHeight = 'height';
 
-const titleInput = document.getElementById("titleInput");
-const titleVisibleToggle = document.getElementById("titleVisibleToggle");
+const titleInput = document.getElementById("title-input");
+const titleVisibleToggle = document.getElementById("title-visible-toggle");
 
-const columnInput = document.getElementById("columnInput");
-const rowInput = document.getElementById("rowInput");
+const columnInput = document.getElementById("column-input");
+const rowInput = document.getElementById("row-input");
 
-const resizeWidth = document.getElementById("resizeWidth");
-const resizeHeight = document.getElementById("resizeHeight");
+const resizeWidth = document.getElementById("resize-width");
+const resizeHeight = document.getElementById("resize-height");
 
 const gridElement = document.querySelector('.grid');
-const configJSONDisplayElement = document.getElementById('jsonLargeTextArea');
+const configJSONDisplayElement = document.getElementById('json-large-text-area');
 
-const createButton = document.getElementById("createButton");
-const deleteButton = document.getElementById('deleteButton');
-const deleteSelectedButton = document.getElementById('deleteSelectedButton');
-const jsonButton = document.getElementById('jsonButton');
-const addButton = document.getElementById('addButton');
-const resizeSelectedButton = document.getElementById('resizeSelectedButton');
+const createButton = document.getElementById("create-button");
+const deleteButton = document.getElementById('delete-button');
+const deleteSelectedButton = document.getElementById('delete-selected-button');
+const jsonButton = document.getElementById('json-button');
+const addButton = document.getElementById('add-button');
+const resizeSelectedButton = document.getElementById('resize-selected-button');
+
+const undraggableClass = "undraggable";
 
 // Create a grid using the Muuri framework that allows drag and drop
 const grid = new Muuri('.grid',
@@ -146,7 +148,7 @@ function setup() {
     addButton.addEventListener('click', addCell);
     resizeSelectedButton.addEventListener('click', didTapResizeSelectedCell);
 
-    hideElement("saveSection");
+    hideElement("save-section");
 
     checkBowserSupportsFilesAPI();
 }
@@ -501,7 +503,7 @@ function generateJSON() {
 
     //TODO: - Limit the width on the generated JSON so horizontal scrolling doesn't get enabled if it's too long
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
-    showElement("saveSection");
+    showElement("save-section");
 }
 
 //Parses the user-input JSON string per item on the grid, and returns the JSON Object
@@ -527,7 +529,7 @@ function parseJSONString(jsonString, column, row) {
         }
     }
     
-    let jsonMessageElement = document.getElementById("jsonGenerationMessage");
+    let jsonMessageElement = document.getElementById("json-generation-message");
     jsonMessageElement.innerHTML = message;
     jsonMessageElement.style.color = color;
 
