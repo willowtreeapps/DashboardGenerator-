@@ -123,6 +123,9 @@ const grid = new Muuri('.grid',
         action: 'swap'
     },
     dragStartPredicate: function (item, e) {
+        if (!e.isFinal && e.target.classList.contains("undraggable")) {
+            return false;
+        }
         if (e.isFinal) {
             return Muuri.ItemDrag.defaultStartPredicate(item, e);
         }
@@ -144,7 +147,7 @@ function setup() {
     deleteButton.addEventListener('click', clearGrid);
     deleteSelectedButton.addEventListener('click', removeSelectedCell);
     jsonButton.addEventListener('click', generateJSON);
-    document.addEventListener('click', didTapCell);
+//    document.addEventListener('click', didTapCell);
     addButton.addEventListener('click', addCell);
     resizeSelectedButton.addEventListener('click', didTapResizeSelectedCell);
 
@@ -247,36 +250,43 @@ function removeSelectedCell() {
 }
 
 //Select or Deselect cell
-function didTapCell(event) {
-    const items = document.querySelectorAll(itemTypesQueryString);
-    items.forEach(element => {
-        if (event.target === element.firstChild) {
-            if (selectedElement === element) {
-                // Element already selected
-                deselectCell(element);
-            } else {
-                selectCell(element);
-            }
-        }
-    });
-}
+// function didTapCell(event) {
+//     id = event.target.id;
+//     displayWidgetJson(id)
+//     const items = document.querySelectorAll(itemTypesQueryString);
+//     items.forEach(element => {
+//         if (event.target === element.firstChild) {
+//             if (selectedElement === element) {
+//                 // Element already selected
+//                 deselectCell(element);
+//             } else {
+//                 selectCell(element);
+//             }
+//         }
+//     });
+// }
 
-function deselectCell(element) {
-    element.firstChild.className = 'item-content-default';
-    selectedElement = null;
-    configJSONDisplayElement.value = '';
-}
+// function deselectCell(element) {
+//     element.firstChild.className = 'item-content-default';
+//     selectedElement = null;
+//     configJSONDisplayElement.value = '';
+// }
 
-function selectCell(element) {
-    if (selectedElement && selectedElement != element) {
-        deselectCell(selectedElement)
-    }
-    element.firstChild.className = 'item-content-selected';
-    selectedElement = element;
+// function selectCell(element) {
+//     if (selectedElement && selectedElement != element) {
+//         deselectCell(selectedElement);
+//     }
+//     element.firstChild.className = 'item-content-selected';
+//     selectedElement = element;
 
-    //If available, display config value in side viewer
-    const index = element.getAttribute("id");
-    const configJSONString = getItemConfigText(index);
+//     //If available, display config value in side viewer
+//     const index = element.getAttribute("id");
+//     const configJSONString = getItemConfigText(index);
+//     configJSONDisplayElement.value = configJSONString;
+// }
+
+function displayWidgetJson(id) {
+    const configJSONString = getItemConfigText(id);
     configJSONDisplayElement.value = configJSONString;
 }
 
@@ -545,17 +555,19 @@ function generateItemDOMFragment(id) {
     let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
+    let editWidgetHtml = createEditWidgetButton(id);
     const fragment = createDOMFragment(
         '<div class="item" id="' + id +
          '">' + 
             '<div class="item-content-default"' +
-            '" onmousedown="return handleListEvent(event)"' + 
-             ' >' + 
+            //'" onmouseup="return handleListEvent(event)"' + 
+             ' ">' + 
             (id + 1) + 
                 '<div class="dropdown_lists">' + 
                     jobsDropDownHtml + 
                     widgetsDropDownList + 
                     configTextField +
+                    editWidgetHtml +
                 '</div>' + 
             '</div>' + 
         '</div>');
@@ -564,10 +576,11 @@ function generateItemDOMFragment(id) {
 
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
-    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    '" onmousedown="return handleListEvent(event)"' + 
-    '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
-    '>';
+    let html = '<select class="' + undraggableClass +
+    '" id="' + itemSelectListName(dropDownListTitle, itemID) + 
+    // '" onmouseup="return handleListEvent(event)"' + 
+    // '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
+    '">';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
         html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
@@ -582,7 +595,7 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = '<textarea id="' + textFieldName + '" type="text" style="resize:none;">' + 
+    let html = '<textarea class="' + undraggableClass + '" id="' + textFieldName + '" type="text" style="resize:none;">' + 
     '</textarea>';
     html+= '<br>';
     html+= '<br>';
@@ -598,6 +611,11 @@ function createDOMFragment(htmlStr) {
         frag.appendChild(temp.firstChild);
     }
     return frag;
+}
+
+function createEditWidgetButton(itemID) {
+    let html = '<button class="edit-widget-button ' + undraggableClass + '" id="edit-widget-button" onclick=displayWidgetJson(' + itemID + ')>View/Edit Widget json</button>'
+    return html
 }
 
 /*******************************************************************************************************************************************************************
@@ -692,23 +710,23 @@ function printObjectProperties(object) {
 
 //Listener that handles the mousedown event on each grid item to be able to set the selectClicked bool
 //selectClicked is used to prevent the grid item from scrolling when the user goes to select a new list value
-function handleListEvent(event) {
-    const target = event.target;
-    const targetType = target.constructor.name;
+// function handleListEvent(event) {
+//     const target = event.target;
+//     const targetType = target.constructor.name;
 
-    //Debugging prints
-    // console.log('event: ' + event.type);
-    // console.log('targetType: ' + targetType);
-    // console.log('Clicked!: ' + targetType);
+//     //Debugging prints
+//     // console.log('event: ' + event.type);
+//     // console.log('targetType: ' + targetType);
+//     // console.log('Clicked!: ' + targetType);
 
-    const safeTargetsList = ['HTMLSelectElement', 'HTMLInputElement', 'HTMLTextAreaElement'];
-    if(safeTargetsList.indexOf(targetType) >= 0) {
-      selectClicked = true;
-    } else {
-      selectClicked = false;
-    }
+//     const safeTargetsList = ['HTMLSelectElement', 'HTMLInputElement', 'HTMLTextAreaElement'];
+//     if(safeTargetsList.indexOf(targetType) >= 0) {
+//       selectClicked = true;
+//     } else {
+//       selectClicked = false;
+//     }
 
-}
+// }
 
 //Listener used to change the config values in each cell as its being edited in the JSON side view.
 function configEditedListener(configJsonDisplayTextArea) {
