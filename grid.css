@@ -40,6 +40,13 @@
   z-index: 4;
 }
 
+.moving-widget {
+  border: 3px solid;
+  border-width: 3px;
+  border-color: white;
+  border-radius: 3px;
+}
+
 .item-content-default {
   position: relative;
   width: 100%;

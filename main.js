@@ -99,8 +99,32 @@ const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
 const resizeSelectedButton = document.getElementById('resizeSelectedButton');
 
+var activelyDragging = false; 
+
+const mouseUp = document.addEventListener('mouseup', function(e){
+    console.log("actively dragging? : " + activelyDragging)
+    if (!activelyDragging) {
+        const target = e.target
+        var parentBox = undefined; 
+        if (target.classList.contains("widget-box")) {
+            handleListEvent(e.type, target);
+            parentBox = target.parentElement;
+        } else if (target.classList.contains("widget-box")) {
+            handleListChangeEvent(e.type, target.firstChild);
+            parentBox = target;
+        }
+
+        if (parentBox != undefined && parentBox.classList.contains("moving-widget")) {
+            parentBox.classList.remove("moving-widget");
+        }
+
+        console.log("end of mouseup");
+    }
+
+}); 
+
 // Create a grid using the Muuri framework that allows drag and drop
-const grid = new Muuri('.grid',
+var grid = new Muuri('.grid',
 {
     dragEnabled: true,
     layoutOnResize: true,
@@ -121,10 +145,17 @@ const grid = new Muuri('.grid',
         action: 'swap'
     },
     dragStartPredicate: function (item, e) {
-        if (e.isFinal) {
-            return Muuri.ItemDrag.defaultStartPredicate(item, e);
-        }
-        return !selectClicked;
+        item._element.classList.add("moving-widget");
+        if (e.deltaTime > 100) {
+            console.log("delta time");
+            activelyDragging = true;
+            return Muuri.ItemDrag.defaultStartPredicate(item, e);            
+        } else if (e.isFinal) {
+            console.log("final");
+            return Muuri.ItemDrag.defaultStartPredicate(item, e);            
+        } 
+
+        activelyDragging = false;
     }
 });
 
@@ -142,7 +173,6 @@ function setup() {
     deleteButton.addEventListener('click', clearGrid);
     deleteSelectedButton.addEventListener('click', removeSelectedCell);
     jsonButton.addEventListener('click', generateJSON);
-    document.addEventListener('click', didTapCell);
     addButton.addEventListener('click', addCell);
     resizeSelectedButton.addEventListener('click', didTapResizeSelectedCell);
 
@@ -211,7 +241,7 @@ function addCell(newCellSize = [1, 1]) {
     grid.refreshItems().layout();
 
     //Resize cell to specified cell size
-    const cellElement = document.getElementById(newID);
+    const cellElement = document.getElementById("widget-box-" + newID);
     cellElement.style.width = (newCellSize[0] * baseItemWidth) + "px";
     cellElement.style.height = (newCellSize[1] * baseItemHeight) + "px";
 
@@ -244,39 +274,55 @@ function removeSelectedCell() {
     selectedElement = null;
 }
 
-//Select or Deselect cell
-function didTapCell(event) {
-    const items = document.querySelectorAll(itemTypesQueryString);
-    items.forEach(element => {
-        if (event.target === element.firstChild) {
-            if (selectedElement === element) {
-                // Element already selected
-                deselectCell(element);
-            } else {
-                selectCell(element);
-            }
-        }
-    });
-}
+// //Select or Deselect cell
+// function didTapCell(event) {
+//     const items = document.querySelectorAll(itemTypesQueryString);
+//     items.forEach(element => {
+//         if (event.target === element.firstChild) {
+//             if (selectedElement === element) {
+//                 // Element already selected
+//                 deselectCell(element);
+//             } else {
+//                 selectCell(element);
+//             }
+//         }
+//     });
+// }
 
-function deselectCell(element) {
-    element.firstChild.className = 'item-content-default';
-    selectedElement = null;
-    configJSONDisplayElement.value = '';
-}
+// function deselectCell(element) {
+//     element.firstChild.className = 'item-content-default';
+//     selectedElement = null;
+//     configJSONDisplayElement.value = '';
+// }
 
-function selectCell(element) {
-    if (selectedElement && selectedElement != element) {
-        deselectCell(selectedElement)
+function enableCell(enable, cell) {
+    console.log("enable cell: " + enable);
+    if (enable) {
+        cell.classList.remove('item-content-default');
+        cell.classList.add('item-content-selected');
+        var index = cell.parentElement.getAttribute("id").substr(-1);
+        var configJsonString = getItemConfigText(index);
+        configJSONDisplayElement.value = configJsonString;
+    } else {
+        cell.classList.remove('item-content-selected');
+        cell.classList.add('item-content-default');
+        configJSONDisplayElement.value = '';
     }
-    element.firstChild.className = 'item-content-selected';
-    selectedElement = element;
 
-    //If available, display config value in side viewer
-    const index = element.getAttribute("id");
-    const configJSONString = getItemConfigText(index);
-    configJSONDisplayElement.value = configJSONString;
 }
+
+// function selectCell(element) {
+//     if (selectedElement && selectedElement != element) {
+//         deselectCell(selectedElement)
+//     }
+//     element.firstChild.className = 'item-content-selected';
+//     selectedElement = element;
+
+//     //If available, display config value in side viewer
+//     const index = element.getAttribute("id");
+//     const configJSONString = getItemConfigText(index);
+//     configJSONDisplayElement.value = configJSONString;
+// }
 
 
 /*******************************************************************************************************************************************************************
@@ -544,10 +590,10 @@ function generateItemDOMFragment(id) {
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="item" id="' + id +
+        '<div class="item" id="widget-box-' + id +
          '">' + 
-            '<div class="item-content-default"' +
-            '" onmousedown="return handleListEvent(event)"' + 
+            '<div class="widget-box item-content-default"' +
+            //'" onmousedown="return handleListEvent(event)"' + 
              ' >' + 
             (id + 1) + 
                 '<div class="dropdown_lists">' + 
@@ -563,7 +609,7 @@ function generateItemDOMFragment(id) {
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    '" onmousedown="return handleListEvent(event)"' + 
+    //'" onmousedown="return handleListEvent(event)"' + 
     '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
     '>';
     for(index in dropDownList) {
@@ -674,7 +720,7 @@ function addExtraSpaceCells() {
     const numberOfColumns = columnInput.value;
     for (let i = 0; i < numberOfColumns; i++) {
         const newID = addCell();
-        makeHiddenCell(document.getElementById(newID));
+        makeHiddenCell(document.getElementById("widget-box-" + newID));
     }
 }
 
@@ -690,22 +736,14 @@ function printObjectProperties(object) {
 
 //Listener that handles the mousedown event on each grid item to be able to set the selectClicked bool
 //selectClicked is used to prevent the grid item from scrolling when the user goes to select a new list value
-function handleListEvent(event) {
-    const target = event.target;
-    const targetType = target.constructor.name;
-
-    //Debugging prints
-    // console.log('event: ' + event.type);
-    // console.log('targetType: ' + targetType);
-    // console.log('Clicked!: ' + targetType);
-
-    const safeTargetsList = ['HTMLSelectElement', 'HTMLInputElement', 'HTMLTextAreaElement'];
-    if(safeTargetsList.indexOf(targetType) >= 0) {
-      selectClicked = true;
-    } else {
-      selectClicked = false;
-    }
-
+function handleListEvent(type, target) {    
+    if (type === "mouseup" || type === "draginit") {
+        if(target.classList.contains("widget-box")) {
+            selectClicked = !selectClicked;
+            enableCell(selectClicked, target);
+        }
+    } 
+    console.log("End of HandleListEvent, selectClicked now = " + selectClicked)
 }
 
 //Listener used to change the config values in each cell as its being edited in the JSON side view.
