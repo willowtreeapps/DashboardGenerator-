@@ -61,9 +61,6 @@ let selectedElement;
 //used to prevent hidden cells from being included in the generated json
 let hiddenCellIDs = [];
 
-//prevent grid items from dragging when select list is clicked
-let selectClicked = false;
-
 //sizes changed depending on size of the page and number of columns in the grid
 let baseItemWidth = 200;
 let baseItemHeight = 250;
@@ -101,16 +98,18 @@ const resizeSelectedButton = document.getElementById('resizeSelectedButton');
 
 var activelyDragging = false; 
 
+function getSelectedElementId() {
+    return selectedElement.parentElement.getAttribute("id").substr(-1); 
+}
+
 const mouseUp = document.addEventListener('mouseup', function(e){
-    console.log("actively dragging? : " + activelyDragging)
     const target = e.target
-    var parentBox = undefined; 
     if (target.classList.contains("widget-box")) {
-        handleListEvent(e.type, target);
-        parentBox = target.parentElement;
-    } else if (target.classList.contains("widget-box")) {
-        handleListChangeEvent(e.type, target.firstChild);
-        parentBox = target;
+        if (e.type === "mouseup") {
+            selectCell(target);  
+        }
+    } else if (target.nodeName != "BUTTON") {
+        deselectCell();
     }
 }); 
 
@@ -250,8 +249,8 @@ function clearGrid() {
 
 //Removes the selected cell. If the selected cell is already an 
 function removeSelectedCell() {
-    if (!isHiddenCell(selectedElement)) {
-        makeHiddenCell(selectedElement);
+    if (!isHiddenCell(selectedElement.parentElement)) {
+        makeHiddenCell(selectedElement.parentElement);
         return;
     }
     grid.remove([selectedElement], {layout: false});
@@ -259,55 +258,32 @@ function removeSelectedCell() {
     selectedElement = null;
 }
 
-// //Select or Deselect cell
-// function didTapCell(event) {
-//     const items = document.querySelectorAll(itemTypesQueryString);
-//     items.forEach(element => {
-//         if (event.target === element.firstChild) {
-//             if (selectedElement === element) {
-//                 // Element already selected
-//                 deselectCell(element);
-//             } else {
-//                 selectCell(element);
-//             }
-//         }
-//     });
-// }
-
-// function deselectCell(element) {
-//     element.firstChild.className = 'item-content-default';
-//     selectedElement = null;
-//     configJSONDisplayElement.value = '';
-// }
-
-function enableCell(enable, cell) {
-    console.log("enable cell: " + enable);
-    if (enable) {
-        cell.classList.remove('item-content-default');
-        cell.classList.add('item-content-selected');
-        var index = cell.parentElement.getAttribute("id").substr(-1);
-        var configJsonString = getItemConfigText(index);
-        configJSONDisplayElement.value = configJsonString;
-    } else {
-        cell.classList.remove('item-content-selected');
-        cell.classList.add('item-content-default');
+function deselectCell() {
+    if (selectedElement) {
+        selectedElement.classList.remove('item-content-selected');
+        selectedElement.classList.add('item-content-default');
+        selectedElement = null;
         configJSONDisplayElement.value = '';
     }
-
 }
 
-// function selectCell(element) {
-//     if (selectedElement && selectedElement != element) {
-//         deselectCell(selectedElement)
-//     }
-//     element.firstChild.className = 'item-content-selected';
-//     selectedElement = element;
+function selectCell(cell) {      
+        // If there is already a selectedElement and it is not the newly clicked cell, clear the pervious item
+        if (selectedElement) {
+            deselectCell()
+        } 
 
-//     //If available, display config value in side viewer
-//     const index = element.getAttribute("id");
-//     const configJSONString = getItemConfigText(index);
-//     configJSONDisplayElement.value = configJSONString;
-// }
+    
+        // Set the selectedElement to be the new cell 
+        selectedElement = cell;
+        selectedElement.classList.remove('item-content-default');
+        selectedElement.classList.add('item-content-selected');
+        // Add the cell's JSON to the display box
+        var id = getSelectedElementId();  
+        var configJsonString = getItemConfigText(id);
+        configJSONDisplayElement.value = configJsonString;
+        
+    }
 
 
 /*******************************************************************************************************************************************************************
@@ -578,7 +554,6 @@ function generateItemDOMFragment(id) {
         '<div class="item" id="widget-box-' + id +
          '">' + 
             '<div class="widget-box item-content-default"' +
-            //'" onmousedown="return handleListEvent(event)"' + 
              ' >' + 
             (id + 1) + 
                 '<div class="dropdown_lists">' + 
@@ -594,7 +569,6 @@ function generateItemDOMFragment(id) {
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    //'" onmousedown="return handleListEvent(event)"' + 
     '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
     '>';
     for(index in dropDownList) {
@@ -676,7 +650,7 @@ function isIDEmptyCell(id) {
 }
 
 function isHiddenCell(element) {
-    const id = element.getAttribute("id");
+    const id = getSelectedElementId();
     const jobsElement = getSelectListElement(jobsListName, id);
     return jobsElement.style.visibility === "hidden";
 }
@@ -722,20 +696,16 @@ function printObjectProperties(object) {
 //Listener that handles the mousedown event on each grid item to be able to set the selectClicked bool
 //selectClicked is used to prevent the grid item from scrolling when the user goes to select a new list value
 function handleListEvent(type, target) {    
-    if (type === "mouseup" || type === "draginit") {
-        if(target.classList.contains("widget-box")) {
-            selectClicked = !selectClicked;
-            enableCell(selectClicked, target);
-        }
+    if (type === "mouseup") {
+        enableCell(target);        
     } 
-    console.log("End of HandleListEvent, selectClicked now = " + selectClicked)
 }
 
 //Listener used to change the config values in each cell as its being edited in the JSON side view.
 function configEditedListener(configJsonDisplayTextArea) {
     const newConfigText = configJsonDisplayTextArea.value;
     if (selectedElement) {
-        const id = selectedElement.getAttribute("id");
+        const id = getSelectedElementId()
         const configElement = document.getElementById(itemConfigTextName(id));
         configElement.value = newConfigText;
     }
@@ -743,6 +713,7 @@ function configEditedListener(configJsonDisplayTextArea) {
 
 //Listener that handles when the use selects a new job or widget, and pre-fills the config textfield with a template based on the item selected
 function handleListChangeEvent(selectElement, id) {
+
     const selectedValue = selectElement.options[selectElement.selectedIndex].value;
     const currentlySelectedJobValue = getSelectListElement(jobsListName, id).options[selectElement.selectedIndex].value;
     if (currentlySelectedJobValue === selectedValue) {//a job has been selected
