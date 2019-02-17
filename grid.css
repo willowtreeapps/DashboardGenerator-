@@ -38,9 +38,6 @@
 
 .item.muuri-item-dragging {
   z-index: 4;
-}
-
-.moving-widget {
   border: 3px solid;
   border-width: 3px;
   border-color: white;

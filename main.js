@@ -103,24 +103,15 @@ var activelyDragging = false;
 
 const mouseUp = document.addEventListener('mouseup', function(e){
     console.log("actively dragging? : " + activelyDragging)
-    if (!activelyDragging) {
-        const target = e.target
-        var parentBox = undefined; 
-        if (target.classList.contains("widget-box")) {
-            handleListEvent(e.type, target);
-            parentBox = target.parentElement;
-        } else if (target.classList.contains("widget-box")) {
-            handleListChangeEvent(e.type, target.firstChild);
-            parentBox = target;
-        }
-
-        if (parentBox != undefined && parentBox.classList.contains("moving-widget")) {
-            parentBox.classList.remove("moving-widget");
-        }
-
-        console.log("end of mouseup");
+    const target = e.target
+    var parentBox = undefined; 
+    if (target.classList.contains("widget-box")) {
+        handleListEvent(e.type, target);
+        parentBox = target.parentElement;
+    } else if (target.classList.contains("widget-box")) {
+        handleListChangeEvent(e.type, target.firstChild);
+        parentBox = target;
     }
-
 }); 
 
 // Create a grid using the Muuri framework that allows drag and drop
@@ -145,17 +136,11 @@ var grid = new Muuri('.grid',
         action: 'swap'
     },
     dragStartPredicate: function (item, e) {
-        item._element.classList.add("moving-widget");
         if (e.deltaTime > 100) {
-            console.log("delta time");
-            activelyDragging = true;
             return Muuri.ItemDrag.defaultStartPredicate(item, e);            
         } else if (e.isFinal) {
-            console.log("final");
             return Muuri.ItemDrag.defaultStartPredicate(item, e);            
         } 
-
-        activelyDragging = false;
     }
 });
 
