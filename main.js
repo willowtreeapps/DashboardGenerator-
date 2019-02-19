@@ -444,7 +444,7 @@ function getRowOfLastVisibleCell() {
     const numberOfColumns = columnInput.value;
     for(i = items.length - 1; i >= 0; i--) {
         //New index in order to generate JSON with the new order of elements reflacted
-        let itemID = items[i].getAttribute('id');
+        let itemID = items[i].getAttribute("id").substr(-1); 
         if (isIDEmptyCell(itemID)) {
             continue;
         }
@@ -471,7 +471,7 @@ function generateJSON() {
     
     for(i = 0; i < items.length; i++) {
         //New index in order to generate JSON with the new order of elements reflacted
-        let itemID = items[i].getAttribute('id');
+        let itemID = items[i].getAttribute("id").substr(-1); 
         if (isIDEmptyCell(itemID)) {
             continue;
         }
@@ -669,7 +669,7 @@ function hideElement(elementIDString) {
 
 function makeHiddenCell(element) {
     element.style.visibility = "hidden";
-    const id = element["id"];
+    const id = element.parentElement.getAttribute("id").substr(-1);
     hiddenCellIDs.push(id);
 }
 
