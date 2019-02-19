@@ -4,11 +4,10 @@
 *******************************************************************************************************************************************************************/
 
 class GridData {
-    constructor(title, titleVisible, layout, widgets, config) {
+    constructor(title, titleVisible, layout, config) {
         this.title = title;
         this.titleVisible = titleVisible;
         this.layout = layout;
-        this.widgets = widgets;
         this.config = config;
     }
 }
@@ -497,7 +496,9 @@ function generateJSON() {
         widgets.push(widgetObject);
     }
 
-    const gridData = new GridData(title, titleVisible, layout, widgets, configurations);
+    layout.widgets = widgets;
+
+    const gridData = new GridData(title, titleVisible, layout, configurations);
 
     //TODO: - Limit the width on the generated JSON so horizontal scrolling doesn't get enabled if it's too long
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
