@@ -96,19 +96,15 @@ const jsonButton = document.getElementById('jsonButton');
 const addButton = document.getElementById('addButton');
 const resizeSelectedButton = document.getElementById('resizeSelectedButton');
 
-var activelyDragging = false; 
-
 function getSelectedElementId() {
     return selectedElement.parentElement.getAttribute("id").substr(-1); 
 }
 
 const mouseUp = document.addEventListener('mouseup', function(e){
     const target = e.target
-    if (target.classList.contains("widget-box")) {
-        if (e.type === "mouseup") {
-            selectCell(target);  
-        }
-    } else if (target.nodeName != "BUTTON") {
+    if (target.classList.contains("widget-box") && e.type === "mouseup") {
+        selectCell(target);        
+    } else if (target.nodeName !== "BUTTON") {
         deselectCell();
     }
 }); 
