@@ -378,7 +378,7 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const key = column + "_" + row;
         const widget = widgetsDictionary[key];
 
-        if (widget == undefined) {
+        if (widget == undefined || jsonObject.config[widget.config]) {
             // widget is not in the available list, hide
             const id = addCell();
             makeHiddenCell(document.getElementById("widget-box-" + id));
@@ -396,7 +396,6 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
             } else {
                 name = "Name Missing";
             }
-        
         
             existingWidgets.push(widget);
 
