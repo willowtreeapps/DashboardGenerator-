@@ -378,7 +378,7 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const key = column + "_" + row;
         const widget = widgetsDictionary[key];
 
-        if (widget == undefined || jsonObject.config[widget.config]) {
+        if (widget == undefined || jsonObject.config[widget.config] == undefined) {
             // widget is not in the available list, hide
             const id = addCell();
             makeHiddenCell(document.getElementById("widget-box-" + id));
@@ -413,10 +413,10 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
             let selectedWidget = getSelectListElement(widgetsListName, widgetID);
 
             widgetNameLabel.innerText = name;
-            widgetConfigLabel.innerText = widgetConfig
             selectedWidget.value = widgetWidget;
             
             if (widgetConfig) {
+                widgetConfigLabel.innerText = widgetConfig
                 const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
                 const configElement = document.getElementById(itemConfigTextName(widgetID));
                 if (configValue) {
@@ -492,7 +492,6 @@ function generateJSON() {
         }
 
         const configJSONName = getItemConfigName(itemID);
-        //widgetNameLabel ? (widgetNameLabel + "_" + itemID) : "";
         let configJSONString = getItemConfigText(itemID);
         if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
@@ -576,14 +575,14 @@ function generateItemDOMFragment(id) {
 }
 
 function createLabelHTML(type, itemId, placeholderMessage) {
-    let html = '<p class="cell-' + type + '-label" id="' + type + '-label-' + itemId + '"> ' + placeholderMessage + '</p>'
+    let html = `<p class="cell-${type}-label" id="${type}-label-${itemId}">${placeholderMessage}</p>`
     return html;
 }
 
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
+    `" onchange="handleListChangeEvent(this, ${itemID} + )"` + 
     '>';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
@@ -599,7 +598,7 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = '<textarea id="' + textFieldName + '" type="text" style="resize:none;">' + 
+    let html = `<textarea id="${textFieldName}" type="text" style="resize:none;">` + 
     '</textarea>';
     html+= '<br>';
     html+= '<br>';
