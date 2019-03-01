@@ -15,8 +15,8 @@ class GridData {
 class ItemData {
     constructor(id, col, row, width, height, widget, job, config) {
         this.id = id;
-        this.col = col;
         this.row = row;
+        this.col = col;
         this.width = width;
         this.height = height;
         this.widget = widget, 
@@ -40,12 +40,12 @@ class GridSize {
 
 class Widget {
     constructor(col, row, width, height, job, widget, config) {
-        this.col = col;
         this.row = row;
+        this.col = col;
         this.width = width;
         this.height = height;
-        this.job = job;
         this.widget = widget;
+        this.job = job;
         this.config = config;
     }
 }
@@ -61,13 +61,13 @@ let selectedElement;
 let hiddenCellIDs = [];
 
 //sizes changed depending on size of the page and number of columns in the grid
-let baseItemWidth = 200;
+let baseItemWidth = 300;
 let baseItemHeight = 250;
 let baseGridSize = 800;
 
 const itemTypesQueryString = '.item';
 
-const jobsListName = 'jobs';
+const widgetName = 'widget-name';
 const widgetsListName = 'widgets';
 
 const jobsPlaceholderMessage = 'Select a Job';
@@ -361,12 +361,10 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const widgetWidth = widget.width;
         const widgetHeight = widget.height;
         let key = widgetCol + "_" + widgetRow;
-        // console.log("REGULAR KEY : " + key);
         widgetsDictionary[key] = widget;
         for (let widthCount = 0; widthCount < widgetWidth; widthCount++) {
             for (let heightCount = 0; heightCount < widgetHeight; heightCount++) {
                 key = (widgetCol + widthCount) + "_" + (widgetRow + heightCount);
-                // console.log("EXTENDED KEY : " + key);
                 widgetsDictionary[key] = widget;
             }
         }
@@ -378,40 +376,51 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
         const row = Math.floor(i / numberOfColumns) + 1;
         const key = column + "_" + row;
         const widget = widgetsDictionary[key];
-        if (!widget || existingWidgets.indexOf(widget) >= 0) {
-            //no widget found for this part of the grid, add an empty cell instead
-            if (!widget && existingWidgets.indexOf(widget) < 0) {
-                const id = addCell();
-                makeHiddenCell(document.getElementById(id));
-                // console.log("HIDDEN KEY : " + key);
+
+        if (widget == undefined || jsonObject.config[widget.config] == undefined) {
+            // widget is not in the available list, hide
+            const id = addCell();
+            makeHiddenCell(document.getElementById("widget-box-" + id));
+        } else {
+            if (jsonObject.config[widget.config].widgetTitle !== undefined) {
+                name = jsonObject.config[widget.config].widgetTitle; 
+            } else if (jsonObject.config[widget.config].name !== undefined) {
+                name = jsonObject.config[widget.config].name; 
+            } else if (jsonObject.config[widget.config].title !== undefined) {
+                name = jsonObject.config[widget.config].title; 
+            } else if (widget.job !== undefined) {
+                name = widget.job; 
+            } else if (widget.widget !== undefined) {
+                name = widget.widget; 
             } else {
-                // console.log("LENGTH KEY : " + key);
+                name = "Name Missing";
             }
-            continue;
-        }
-        existingWidgets.push(widget);
-        // console.log("PUTTING KEY : " + key);
+        
+            existingWidgets.push(widget);
 
-        const widgetWidth = widget.width;
-        const widgetHeight = widget.height;
-        const widgetJob = widget.job;
-        const widgetWidget = widget.widget;
-        const widgetConfig = widget.config;
+            const widgetWidth = widget.width;
+            const widgetHeight = widget.height;
+            const widgetWidget = widget.widget;
+            const widgetConfig = widget.config;
 
-        const newCellSize = [widgetWidth, widgetHeight];
-        const widgetID = addCell(newCellSize);
+            const newCellSize = [widgetWidth, widgetHeight];
 
-        let selectedJob = getSelectListElement(jobsListName, widgetID);
-        let selectedWidget = getSelectListElement(widgetsListName, widgetID);
+            const widgetID = addCell(newCellSize);
 
-        selectedJob.value = widgetJob;
-        selectedWidget.value = widgetWidget;
+            let widgetNameLabel = document.getElementById("name-label-" + widgetID);
+            let widgetConfigLabel = document.getElementById("config-label-" + widgetID);
+            let selectedWidget = getSelectListElement(widgetsListName, widgetID);
 
-        if (widgetConfig) {
-            const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
-            const configElement = document.getElementById(itemConfigTextName(widgetID));
-            if (configValue) {
-                configElement.value = configValue;
+            widgetNameLabel.innerText = name;
+            selectedWidget.value = widgetWidget;
+            
+            if (widgetConfig) {
+                widgetConfigLabel.innerText = widgetConfig
+                const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
+                const configElement = document.getElementById(itemConfigTextName(widgetID));
+                if (configValue) {
+                    configElement.value = configValue;
+                }
             }
         }
     }
@@ -455,7 +464,7 @@ function generateJSON() {
     const title = titleInput.value;
     const titleVisible = isTitleVisible();
 
-    const numberOfColumns = columnInput.value;
+    const numberOfColumns = parseInt(columnInput.value);
     const numberOfRows = getRowOfLastVisibleCell();
 
     const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
@@ -473,15 +482,15 @@ function generateJSON() {
 
         const column = Math.floor(i % numberOfColumns) + 1;
         const row = Math.floor(i / numberOfColumns) + 1;
-        let selectedJob = getSelectedListElementValue(jobsListName, itemID);
+        let widgetNameLabel = document.getElementById("name-label-" + itemID);
         let selectedWidget = getSelectedListElementValue(widgetsListName, itemID);
 
-        if (!selectedJob || !selectedWidget || selectedJob === jobsPlaceholderMessage || selectedWidget === widgetsPlaceholderMessage) {
+        if (!widgetNameLabel || !selectedWidget || widgetNameLabel === jobsPlaceholderMessage || selectedWidget === widgetsPlaceholderMessage) {
             //Require that a job and a widget be selected to include this cell as part of the generated JSON
             continue;
         }
 
-        const configJSONName = selectedJob ? (selectedJob + "_" + itemID) : "";
+        const configJSONName = getItemConfigName(itemID);
         let configJSONString = getItemConfigText(itemID);
         if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
             configJSONString = '{' + configJSONString + '}';
@@ -494,8 +503,8 @@ function generateJSON() {
         
         const blockWidth = Math.floor(item.getWidth() / baseItemWidth);
         const blockHeight = Math.floor(item.getHeight() / baseItemHeight);
-
-        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedJob, selectedWidget, configJSONName);
+        // first selectedWidget is selectedJob
+        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedWidget, selectedWidget, configJSONName);
         widgets.push(widgetObject);
     }
 
@@ -544,7 +553,9 @@ function parseJSONString(jsonString, column, row) {
 
 //Generates the HTML for a cell in the grid
 function generateItemDOMFragment(id) {
-    let jobsDropDownHtml = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
+    // TODO: variable-ify these strings
+    let widgetNameLabel = createLabelHTML("name", id, "Name Missing");
+    let widgetConfigLabel = createLabelHTML("config", id, "Config missing");
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
@@ -553,8 +564,9 @@ function generateItemDOMFragment(id) {
             '<div class="widget-box item-content-default"' +
              ' >' + 
             (id + 1) + 
+                widgetNameLabel +
+                widgetConfigLabel + 
                 '<div class="dropdown_lists">' + 
-                    jobsDropDownHtml + 
                     widgetsDropDownList + 
                     configTextField +
                 '</div>' + 
@@ -563,10 +575,15 @@ function generateItemDOMFragment(id) {
     return fragment;
 }
 
+function createLabelHTML(type, itemId, placeholderMessage) {
+    let html = `<p class="cell-${type}-label" id="${type}-label-${itemId}">${placeholderMessage}</p>`
+    return html;
+}
+
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
     let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    '" onchange="handleListChangeEvent(this, ' + itemID + ')"' + 
+    `" onchange="handleListChangeEvent(this, ${itemID} + )"` + 
     '>';
     for(index in dropDownList) {
         const itemName = dropDownList[index];
@@ -582,7 +599,7 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = '<textarea id="' + textFieldName + '" type="text" style="resize:none;">' + 
+    let html = `<textarea id="${textFieldName}" type="text" style="resize:none;">` + 
     '</textarea>';
     html+= '<br>';
     html+= '<br>';
@@ -666,7 +683,7 @@ function hideElement(elementIDString) {
 
 function makeHiddenCell(element) {
     element.style.visibility = "hidden";
-    const id = element.parentElement.getAttribute('id').substr(-1);
+    const id = element.getAttribute('id').substr(-1);
     hiddenCellIDs.push(id);
 }
 
@@ -711,8 +728,10 @@ function configEditedListener(configJsonDisplayTextArea) {
 //Listener that handles when the use selects a new job or widget, and pre-fills the config textfield with a template based on the item selected
 function handleListChangeEvent(selectElement, id) {
 
+    /// all of the jobs have the same name as the widgets, just use the widget name 
+
     const selectedValue = selectElement.options[selectElement.selectedIndex].value;
-    const currentlySelectedJobValue = getSelectListElement(jobsListName, id).options[selectElement.selectedIndex].value;
+    const currentlySelectedJobValue = getSelectListElement(widgetsListName, id).options[selectElement.selectedIndex].value;
     if (currentlySelectedJobValue === selectedValue) {//a job has been selected
         const correspondingWidgetValue = widgetsList[widgetsList.indexOf(currentlySelectedJobValue)];
         if (correspondingWidgetValue) {
@@ -760,6 +779,12 @@ function getSelectListElement(listName, itemID) {
     const itemSelectedListName = itemSelectListName(listName, itemID);
     const listElement = document.getElementById(itemSelectedListName);
     return listElement;
+}
+
+function getItemConfigName(itemId) {
+    const textFieldElement = document.getElementById("config-label-" + itemId);
+    const configName = textFieldElement.innerHTML;
+    return configName.trim();
 }
 
 //Gets the config text from the config HTML textfield box inside a grid item
@@ -866,6 +891,7 @@ const widgetsList =
 'sentinel-one-threats',
 'sentinel-one',
 'sprint-goals',
+'sprinthealth',
 'sprinthealth-history',
 'teamcity-build-queue',
 'teamcity-build-status',
@@ -904,6 +930,7 @@ const jobsList =
 'sentinel-one-threats',
 'sentinel-one',
 'sprint-goals',
+'sprinthealth',
 'sprinthealth-history',
 'teamcity_queuestatus',
 'teamcity-build-status',
