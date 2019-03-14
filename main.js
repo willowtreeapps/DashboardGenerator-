@@ -213,10 +213,12 @@ function addCell(newCellSize = [1, 1], widgetId = -1) {
     const fragment = generateItemDOMFragment(newID);
 
     grid.add(fragment.firstChild);
+    document.body.insertBefore(fragment, document.body.childNodes[newID]);
+
+    // This is a dictionary that stores the grid Id and widgetId of every widget. This is used later to ensure widget columns and rows are properly set
     let gridLength = grid._items.length;
     let newGridItemId = grid._items[gridLength - 1]._id;
     gridItemDict[newGridItemId] = widgetId;
-    document.body.insertBefore(fragment, document.body.childNodes[newID]);
 
     // Set Config Placeholder
     const configElement = document.getElementById(itemConfigTextName(newID));
@@ -461,6 +463,8 @@ function getCurrentConfigurations() {
 function generateJSON() {
     grid.synchronize(); //reflect any order changes
 
+    // Not really sure how else to do this.
+    // I grab the "top" and "left" coordinates of the element and divide it by the base width/height (+4px of padding). Round it since it sometimes is slightly off and columns won't be non-integers 
     grid._items.forEach(function(item, index) {
         let widgetId = gridItemDict[item._id];
         if (currentWidgets[widgetId]) {
@@ -470,12 +474,6 @@ function generateJSON() {
             currentWidgets[widgetId].row = Math.round(item._top / (baseItemHeight + 4) + 1); 
         }
     });
-
-    // for(item in grid._items) {
-    //     let idOfWidgetToMove = gridItemDict[item._id];
-    //     currentWidgets.push(currentWidgets[idOfWidgetToMove]);
-    //     currentWidgets.splice(idOfWidgetToMove, 1);
-    // }
 
     const title = titleInput.value;
     const titleVisible = isTitleVisible();
