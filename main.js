@@ -101,11 +101,15 @@ function getSelectedElementId() {
 const mouseUp = document.addEventListener('mouseup', function(e){
     const target = e.target
     if (target.id != "jsonLargeTextArea") {
-        if (target.classList.contains("widget-box") && e.type === "mouseup") {
-            selectCell(target);
-        } else if (target.nodeName !== "BUTTON") {
-            deselectCell();
-        }
+        if(e.type === "mouseup") {
+            if (target.classList.contains("widget-box")) {
+                selectCell(target);
+            } else if (target.parentElement.classList.contains("widget-box")) {
+                selectCell(target.parentElement);
+            } else if (target.nodeName !== "BUTTON") {
+                deselectCell();
+            }
+    }
     }
 }); 
 
@@ -200,6 +204,10 @@ function didTapResizeSelectedCell() {
     if (selectedElement) {
         selectedElement.style.width = (width * baseItemWidth) + "px";
         selectedElement.style.height = (height * baseItemHeight) + "px";
+        const id = getSelectedElementId()
+        const configElement = document.getElementById(itemConfigTextName(id));
+        configElement.style.width = (width * baseItemWidth) + "px";
+        configElement.style.height = (height * baseItemHeight) + "px";
     }
 
     grid.refreshItems().layout();
@@ -877,6 +885,7 @@ const widgetsList =
 'sprinthealth-history',
 'teamcity-build-queue',
 'teamcity-build-status',
+'teamcity-space-left',
 'teamcity-test-trend',
 'test-results',
 'testrail_run-count',
@@ -916,6 +925,7 @@ const jobsList =
 'sprinthealth-history',
 'teamcity_queuestatus',
 'teamcity-build-status',
+'teamcity-space-left',
 'teamcity-test-trend',
 'test-results',
 'testrail_run-count',
