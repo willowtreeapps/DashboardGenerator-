@@ -60,8 +60,8 @@ let baseItemWidth = 300;
 let baseItemHeight = 250;
 let baseGridSize = 800;
 
-var currentWidgets = [];
-var gridItemDict = {};
+const currentWidgets = [];
+const gridItemDict = {};
 
 const itemTypesQueryString = '.item';
 
@@ -100,16 +100,14 @@ function getSelectedElementId() {
 
 const mouseUp = document.addEventListener('mouseup', function(e){
     const target = e.target
-    if (target.id != "jsonLargeTextArea") {
-        if(e.type === "mouseup") {
-            if (target.classList.contains("widget-box")) {
-                selectCell(target);
-            } else if (target.parentElement.classList.contains("widget-box")) {
-                selectCell(target.parentElement);
-            } else if (target.nodeName !== "BUTTON") {
-                deselectCell();
-            }
-    }
+    if (target.id !== "jsonLargeTextArea" && e.type === "mouseup") {
+        if (target.classList.contains("widget-box")) {
+            selectCell(target);
+        } else if (target.parentElement.classList.contains("widget-box")) {
+            selectCell(target.parentElement);
+        } else if (target.nodeName !== "BUTTON") {
+            deselectCell();
+        }
     }
 }); 
 
@@ -381,10 +379,10 @@ function addWidgetsFromJSON(jsonObject) {
 
     widgets.forEach(function(widget, index) {
         if (widget != undefined && jsonObject.config[widget.config] != undefined) {
-            let importedWidget = new Widget(widget);
+            const importedWidget = new Widget(widget);
             currentWidgets.push(importedWidget);
 
-            var name = "";
+            const name = "";
             if (jsonObject.config[widget.config].widgetTitle !== undefined) {
                 name = jsonObject.config[widget.config].widgetTitle; 
             } else if (jsonObject.config[widget.config].name !== undefined) {
@@ -456,11 +454,11 @@ function getRowOfLastVisibleCell() {
 }
 
 function getCurrentConfigurations() {
-    var configurations = {};
+    const configurations = {};
     currentWidgets.forEach(function(widget, index) {
-        let configName = widget.config;
-        let configText = getItemConfigText(index);
-        let configJSONObject = parseJSONString(configText, index);
+        const configName = widget.config;
+        const configText = getItemConfigText(index);
+        const configJSONObject = parseJSONString(configText, index);
 
         configurations[configName] = configJSONObject;
     });
@@ -476,8 +474,6 @@ function generateJSON() {
     grid._items.forEach(function(item, index) {
         let widgetId = gridItemDict[item._id];
         if (currentWidgets[widgetId]) {
-            console.log("Left: " + item._left);
-            console.log("Top: " + item._top);
             currentWidgets[widgetId].col = Math.round(item._left / (baseItemWidth + 4) + 1);
             currentWidgets[widgetId].row = Math.round(item._top / (baseItemHeight + 4) + 1); 
         }
@@ -496,7 +492,7 @@ function generateJSON() {
 
     layout.widgets = currentWidgets;
 
-    var description = "";
+    const description = "";
 
     const gridData = new GridData(title, titleVisible, description, layout, configurations);
 
