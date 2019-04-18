@@ -4,23 +4,11 @@
 *******************************************************************************************************************************************************************/
 
 class GridData {
-    constructor(title, titleVisible, layout, config) {
+    constructor(title, titleVisible, description, layout, config) {
         this.title = title;
+        this.description = description;
         this.titleVisible = titleVisible;
         this.layout = layout;
-        this.config = config;
-    }
-}
-
-class ItemData {
-    constructor(id, col, row, width, height, widget, job, config) {
-        this.id = id;
-        this.row = row;
-        this.col = col;
-        this.width = width;
-        this.height = height;
-        this.widget = widget, 
-        this.job = job;
         this.config = config;
     }
 }
@@ -38,15 +26,22 @@ class GridSize {
     }
 }
 
+class GridItem {
+    constructor(widgetId, gridId) {
+        this.widgetId = widgetId;
+        this.gridId = gridId;
+    }
+}
+
 class Widget {
-    constructor(col, row, width, height, job, widget, config) {
-        this.row = row;
-        this.col = col;
-        this.width = width;
-        this.height = height;
-        this.widget = widget;
-        this.job = job;
-        this.config = config;
+    constructor(widget) {
+        this.row = widget.row;
+        this.col = widget.col;
+        this.width = widget.width;
+        this.height = widget.height;
+        this.widget = widget.widget;
+        this.job = widget.job;
+        this.config = widget.config;
     }
 }
 
@@ -65,10 +60,14 @@ let baseItemWidth = 300;
 let baseItemHeight = 250;
 let baseGridSize = 800;
 
+const currentWidgets = [];
+const gridItemDict = {};
+
 const itemTypesQueryString = '.item';
 
 const widgetName = 'widget-name';
 const widgetsListName = 'widgets';
+const jobsListName = 'jobs';
 
 const jobsPlaceholderMessage = 'Select a Job';
 const widgetsPlaceholderMessage = 'Select a Widget';
@@ -101,10 +100,14 @@ function getSelectedElementId() {
 
 const mouseUp = document.addEventListener('mouseup', function(e){
     const target = e.target
-    if (target.classList.contains("widget-box") && e.type === "mouseup") {
-        selectCell(target);        
-    } else if (target.nodeName !== "BUTTON") {
-        deselectCell();
+    if (target.id !== "jsonLargeTextArea" && e.type === "mouseup") {
+        if (target.classList.contains("widget-box")) {
+            selectCell(target);
+        } else if (target.parentElement.classList.contains("widget-box")) {
+            selectCell(target.parentElement);
+        } else if (target.nodeName !== "BUTTON") {
+            deselectCell();
+        }
     }
 }); 
 
@@ -199,27 +202,37 @@ function didTapResizeSelectedCell() {
     if (selectedElement) {
         selectedElement.style.width = (width * baseItemWidth) + "px";
         selectedElement.style.height = (height * baseItemHeight) + "px";
+        const id = getSelectedElementId()
+        const configElement = document.getElementById(itemConfigTextName(id));
+        configElement.style.width = (width * baseItemWidth) + "px";
+        configElement.style.height = (height * baseItemHeight) + "px";
     }
 
     grid.refreshItems().layout();
 }
 
 // Add a 1x1 cell to the grid 
-function addCell(newCellSize = [1, 1]) {
+function addCell(newCellSize = [1, 1], widgetId = -1) {
     const newID = uuid;
     uuid++;
     
     const fragment = generateItemDOMFragment(newID);
+
     grid.add(fragment.firstChild);
     document.body.insertBefore(fragment, document.body.childNodes[newID]);
 
-    //Set Config Placeholder
+    // This is a dictionary that stores the grid Id and widgetId of every widget. This is used later to ensure widget columns and rows are properly set
+    let gridLength = grid._items.length;
+    let newGridItemId = grid._items[gridLength - 1]._id;
+    gridItemDict[newGridItemId] = widgetId;
+
+    // Set Config Placeholder
     const configElement = document.getElementById(itemConfigTextName(newID));
     configElement.placeholder = "config name";
 
     grid.refreshItems().layout();
 
-    //Resize cell to specified cell size
+    // Resize cell to specified cell size
     const cellElement = document.getElementById("widget-box-" + newID);
     cellElement.style.width = (newCellSize[0] * baseItemWidth) + "px";
     cellElement.style.height = (newCellSize[1] * baseItemHeight) + "px";
@@ -267,7 +280,6 @@ function selectCell(cell) {
         if (selectedElement) {
             deselectCell()
         } 
-
     
         // Set the selectedElement to be the new cell 
         selectedElement = cell;
@@ -279,7 +291,6 @@ function selectCell(cell) {
         configJSONDisplayElement.value = configJsonString;
         
     }
-
 
 /*******************************************************************************************************************************************************************
 ****************************************************** Populating From Uploaded JSON *******************************************************************************
@@ -315,7 +326,7 @@ function createGridFromJSON(jsonObject) {
 
     clearGrid();
 
-    addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows);
+    addWidgetsFromJSON(jsonObject);
 
     addExtraSpaceCells();
 
@@ -346,42 +357,32 @@ function updateGridSize(numberOfColumns) {
     gridElement.style.height = ((baseItemWidth + margin) * (grid.getItems.length / numberOfColumns)) + "px";
 }
 
-function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
-    const configurations = jsonObject.config;
-    let widgets = jsonObject.widgets;
+function setWidgetIdentityLabel(widgetId, name) {
+    let widgetNameLabel = document.getElementById("name-label-" + widgetId);
+    let widgetConfigLabel = document.getElementById("config-label-" + widgetId);
+
+    widgetNameLabel.innerHTML = name;
+    widgetConfigLabel.innerHTML = currentWidgets[widgetId].config;
+}
+
+function setWidgetConfigTextField(widgetId, configText) {
+    let configElement = document.getElementById(itemConfigTextName(widgetId));
+    configElement.value = configText;    
+}
+
+function addWidgetsFromJSON(jsonObject) {
+    var configurations = jsonObject.config;
+    var widgets = jsonObject.widgets;
     if (!widgets) {
         widgets = jsonObject.layout.widgets;
     }
 
-    let widgetsDictionary = {};
-    for (count = 0; count < widgets.length; count++) {
-        const widget = widgets[count];
-        const widgetCol = widget.col;
-        const widgetRow = widget.row;
-        const widgetWidth = widget.width;
-        const widgetHeight = widget.height;
-        let key = widgetCol + "_" + widgetRow;
-        widgetsDictionary[key] = widget;
-        for (let widthCount = 0; widthCount < widgetWidth; widthCount++) {
-            for (let heightCount = 0; heightCount < widgetHeight; heightCount++) {
-                key = (widgetCol + widthCount) + "_" + (widgetRow + heightCount);
-                widgetsDictionary[key] = widget;
-            }
-        }
-    }
+    widgets.forEach(function(widget, index) {
+        if (widget != undefined && jsonObject.config[widget.config] != undefined) {
+            const importedWidget = new Widget(widget);
+            currentWidgets.push(importedWidget);
 
-    const existingWidgets = [];
-    for (let i = 0; i < (numberOfColumns * numberOfRows); i++) {
-        const column = Math.floor(i % numberOfColumns) + 1;
-        const row = Math.floor(i / numberOfColumns) + 1;
-        const key = column + "_" + row;
-        const widget = widgetsDictionary[key];
-
-        if (widget == undefined || jsonObject.config[widget.config] == undefined) {
-            // widget is not in the available list, hide
-            const id = addCell();
-            makeHiddenCell(document.getElementById("widget-box-" + id));
-        } else {
+            const name = "";
             if (jsonObject.config[widget.config].widgetTitle !== undefined) {
                 name = jsonObject.config[widget.config].widgetTitle; 
             } else if (jsonObject.config[widget.config].name !== undefined) {
@@ -395,35 +396,30 @@ function addWidgetsFromJSON(jsonObject, numberOfColumns, numberOfRows) {
             } else {
                 name = "Name Missing";
             }
-        
-            existingWidgets.push(widget);
 
-            const widgetWidth = widget.width;
-            const widgetHeight = widget.height;
-            const widgetWidget = widget.widget;
-            const widgetConfig = widget.config;
+            // Just to avoid ambiguity 
+            let widgetId = index;
+            let newCellSize = [widget.width, widget.height];
+            addCell(newCellSize, widgetId);
 
-            const newCellSize = [widgetWidth, widgetHeight];
+            let selectWidgetList = getSelectListElement(widgetsListName, widgetId);
+            let selectJobList = getSelectListElement(jobsListName, widgetId);
 
-            const widgetID = addCell(newCellSize);
+            selectWidgetList.value = widget.widget
+            selectJobList.value = widget.job
 
-            let widgetNameLabel = document.getElementById("name-label-" + widgetID);
-            let widgetConfigLabel = document.getElementById("config-label-" + widgetID);
-            let selectedWidget = getSelectListElement(widgetsListName, widgetID);
+            // Set the widget Name and Config labels
+            setWidgetIdentityLabel(widgetId, name);
 
-            widgetNameLabel.innerText = name;
-            selectedWidget.value = widgetWidget;
-            
-            if (widgetConfig) {
-                widgetConfigLabel.innerText = widgetConfig
-                const configValue = JSON.stringify(configurations[widgetConfig], null, '\t');
-                const configElement = document.getElementById(itemConfigTextName(widgetID));
-                if (configValue) {
-                    configElement.value = configValue;
-                }
+            // Set the Widget Config JSON Text Field
+            let widgetConfig = currentWidgets[widgetId].config
+
+            let configText = JSON.stringify(configurations[widgetConfig], null, '\t');
+            if (configText) {                
+                setWidgetConfigTextField(widgetId, configText);
             }
         }
-    }
+    });
 }
 
 //Listener that handles processing the json file the user selects to upload and generate the grid from
@@ -432,7 +428,7 @@ function handleFiles(filesList) {
     fr = new FileReader(); 
     fr.onload = function(e) {
         var rawLog = fr.result;
-        let jsonObject = parseJSONString(rawLog, -1, -1);
+        let jsonObject = parseJSONString(rawLog, -1);
         createGridFromJSON(jsonObject);
     };
     fr.readAsText(file);
@@ -457,9 +453,31 @@ function getRowOfLastVisibleCell() {
     }
 }
 
+function getCurrentConfigurations() {
+    const configurations = {};
+    currentWidgets.forEach(function(widget, index) {
+        const configName = widget.config;
+        const configText = getItemConfigText(index);
+        const configJSONObject = parseJSONString(configText, index);
+
+        configurations[configName] = configJSONObject;
+    });
+    return configurations;
+}
+
 // Build the GridData object and convert it to a JSON string
 function generateJSON() {
-    grid.synchronize();//reflect any order changes
+    grid.synchronize(); //reflect any order changes
+
+    // Not really sure how else to do this.
+    // I grab the "top" and "left" coordinates of the element and divide it by the base width/height (+4px of padding). Round it since it sometimes is slightly off and columns won't be non-integers 
+    grid._items.forEach(function(item, index) {
+        let widgetId = gridItemDict[item._id];
+        if (currentWidgets[widgetId]) {
+            currentWidgets[widgetId].col = Math.round(item._left / (baseItemWidth + 4) + 1);
+            currentWidgets[widgetId].row = Math.round(item._top / (baseItemHeight + 4) + 1); 
+        }
+    });
 
     const title = titleInput.value;
     const titleVisible = isTitleVisible();
@@ -467,50 +485,16 @@ function generateJSON() {
     const numberOfColumns = parseInt(columnInput.value);
     const numberOfRows = getRowOfLastVisibleCell();
 
-    const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));
-    
-    const widgets = [];
-    const configurations = {};
-    const items = document.querySelectorAll(itemTypesQueryString);
-    
-    for(i = 0; i < items.length; i++) {
-        //New index in order to generate JSON with the new order of elements reflacted
-        let itemID = items[i].getAttribute('id').substr(-1); 
-        if (isIDEmptyCell(itemID)) {
-            continue;
-        }
+    const layout = new Layout(new GridSize(numberOfColumns, numberOfRows));    
+    var configurations = {};
 
-        const column = Math.floor(i % numberOfColumns) + 1;
-        const row = Math.floor(i / numberOfColumns) + 1;
-        let widgetNameLabel = document.getElementById("name-label-" + itemID);
-        let selectedWidget = getSelectedListElementValue(widgetsListName, itemID);
+    configurations = getCurrentConfigurations();
 
-        if (!widgetNameLabel || !selectedWidget || widgetNameLabel === jobsPlaceholderMessage || selectedWidget === widgetsPlaceholderMessage) {
-            //Require that a job and a widget be selected to include this cell as part of the generated JSON
-            continue;
-        }
+    layout.widgets = currentWidgets;
 
-        const configJSONName = getItemConfigName(itemID);
-        let configJSONString = getItemConfigText(itemID);
-        if (configJSONString.indexOf('{') != 0 && configJSONString.indexOf("\"") >= 0) {
-            configJSONString = '{' + configJSONString + '}';
-        }
-        
-        const configJSONObject = parseJSONString(configJSONString, column, row);
-        configurations[configJSONName] = configJSONObject;
+    const description = "";
 
-        const item = grid.getItems()[i];
-        
-        const blockWidth = Math.floor(item.getWidth() / baseItemWidth);
-        const blockHeight = Math.floor(item.getHeight() / baseItemHeight);
-        // first selectedWidget is selectedJob
-        const widgetObject = new Widget(column, row, blockWidth, blockHeight, selectedWidget, selectedWidget, configJSONName);
-        widgets.push(widgetObject);
-    }
-
-    layout.widgets = widgets;
-
-    const gridData = new GridData(title, titleVisible, layout, configurations);
+    const gridData = new GridData(title, titleVisible, description, layout, configurations);
 
     //TODO: - Limit the width on the generated JSON so horizontal scrolling doesn't get enabled if it's too long
     document.getElementById('json').innerHTML = JSON.stringify(gridData, null, 2);
@@ -519,7 +503,7 @@ function generateJSON() {
 
 //Parses the user-input JSON string per item on the grid, and returns the JSON Object
 //generates a message on the page letting the user know if there are any parsing errors while doing this.
-function parseJSONString(jsonString, column, row) {
+function parseJSONString(jsonString, id) {
     let configJSON;
     let message = 'SUCCESS!!!';
     let color = 'green';
@@ -534,7 +518,7 @@ function parseJSONString(jsonString, column, row) {
             try {
                 configJSON = JSON.parse(jsonString);
             } catch(err) {
-                message = 'gridRow: ' + row + ', gridColumn: ' + column + '  ERROR : ' + err.message + ' : ' + jsonString;
+                message = 'gridRow: ' + currentWidgets[id].row + ', gridColumn: ' + currentWidgets[id].col + '  ERROR : ' + err.message + ' : ' + jsonString;
                 color = 'red';
             }
         }
@@ -557,21 +541,23 @@ function generateItemDOMFragment(id) {
     let widgetNameLabel = createLabelHTML("name", id, "Name Missing");
     let widgetConfigLabel = createLabelHTML("config", id, "Config missing");
     let widgetsDropDownList = createDropDownHTML(widgetsListName, widgetsList, id, widgetsPlaceholderMessage);
+    let jobsDropDownList = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="item" id="widget-box-' + id +
-         '">' + 
-            '<div class="widget-box item-content-default"' +
-             ' >' + 
-            (id + 1) + 
-                widgetNameLabel +
-                widgetConfigLabel + 
-                '<div class="dropdown_lists">' + 
-                    widgetsDropDownList + 
-                    configTextField +
-                '</div>' + 
-            '</div>' + 
-        '</div>');
+        `<div class="item" id="widget-box-${id}">  
+            <div class="widget-box item-content-default">
+                ${widgetNameLabel}
+                ${widgetConfigLabel} 
+                <div class="dropdown_lists">
+                    ${widgetsDropDownList}
+                    ${jobsDropDownList}
+                </div>
+                <div class="json-config">
+                ${configTextField}
+                </div>
+            </div>
+        </div>`
+        );
     return fragment;
 }
 
@@ -582,16 +568,14 @@ function createLabelHTML(type, itemId, placeholderMessage) {
 
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
-    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    `" onchange="handleListChangeEvent(this, ${itemID} + )"` + 
-    '>';
+    let html = `<select id="${itemSelectListName(dropDownListTitle, itemID)}" onchange="handleListChangeEvent(this, ${itemID})">`
     for(index in dropDownList) {
         const itemName = dropDownList[index];
-        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
-        html+= '<option value="' + itemName + '">' + itemName + '</option>';
+        html += '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
+        html += '<option value="' + itemName + '">' + itemName + '</option>';
     }
-    html+= '</select>';
-    html+= '<br />' ;
+    html += `</select>\n
+            <br>`;
 
     return html;
 }
@@ -599,10 +583,10 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = `<textarea id="${textFieldName}" type="text" style="resize:none;">` + 
-    '</textarea>';
-    html+= '<br>';
-    html+= '<br>';
+    let html = `<textarea id="${textFieldName}" type="text" style="resize:none;">\n
+        </textarea>\n
+        <br>\n
+        <br>`
     return html;
 }
 
@@ -895,6 +879,7 @@ const widgetsList =
 'sprinthealth-history',
 'teamcity-build-queue',
 'teamcity-build-status',
+'teamcity-space-left',
 'teamcity-test-trend',
 'test-results',
 'testrail_run-count',
@@ -934,6 +919,7 @@ const jobsList =
 'sprinthealth-history',
 'teamcity_queuestatus',
 'teamcity-build-status',
+'teamcity-space-left',
 'teamcity-test-trend',
 'test-results',
 'testrail_run-count',
