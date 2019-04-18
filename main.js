@@ -544,20 +544,20 @@ function generateItemDOMFragment(id) {
     let jobsDropDownList = createDropDownHTML(jobsListName, jobsList, id, jobsPlaceholderMessage);
     let configTextField = createConfigTextField(id);
     const fragment = createDOMFragment(
-        '<div class="item" id="widget-box-' + id +
-         '">' + 
-            '<div class="widget-box item-content-default">' + 
-                widgetNameLabel +
-                widgetConfigLabel + 
-                '<div class="dropdown_lists">' +
-                    widgetsDropDownList +
-                    jobsDropDownList +
-                '</div>' +
-                '<div class="json-config">' +
-                configTextField +
-                '</div>' +
-            '</div>' +
-        '</div>');
+        `<div class="item" id="widget-box-${id}">  
+            <div class="widget-box item-content-default">
+                ${widgetNameLabel}
+                ${widgetConfigLabel} 
+                <div class="dropdown_lists">
+                    ${widgetsDropDownList}
+                    ${jobsDropDownList}
+                </div>
+                <div class="json-config">
+                ${configTextField}
+                </div>
+            </div>
+        </div>`
+        );
     return fragment;
 }
 
@@ -568,16 +568,14 @@ function createLabelHTML(type, itemId, placeholderMessage) {
 
 //Creates an HTML Select list to be injected into the HTML of each grid item.
 function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholderMessage) {
-    let html = '<select id="' + itemSelectListName(dropDownListTitle, itemID) + 
-    `" onchange="handleListChangeEvent(this, ${itemID} + )"` + 
-    '>';
+    let html = `<select id="${itemSelectListName(dropDownListTitle, itemID)}" onchange="handleListChangeEvent(this, ${itemID})">`
     for(index in dropDownList) {
         const itemName = dropDownList[index];
-        html+= '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
-        html+= '<option value="' + itemName + '">' + itemName + '</option>';
+        html += '<option value="" disabled selected hidden>' + placeholderMessage + '</option>';
+        html += '<option value="' + itemName + '">' + itemName + '</option>';
     }
-    html+= '</select>';
-    html+= '<br />' ;
+    html += `</select>\n
+            <br>`;
 
     return html;
 }
@@ -585,10 +583,10 @@ function createDropDownHTML(dropDownListTitle, dropDownList, itemID, placeholder
 //Creates an HTML config text field to be injected into the HTML of each grid item.
 function createConfigTextField(itemID) {
     let textFieldName = itemConfigTextName(itemID);
-    let html = `<textarea id="${textFieldName}" type="text" style="resize:none;">` + 
-    '</textarea>';
-    html+= '<br>';
-    html+= '<br>';
+    let html = `<textarea id="${textFieldName}" type="text" style="resize:none;">\n
+        </textarea>\n
+        <br>\n
+        <br>`
     return html;
 }
 
